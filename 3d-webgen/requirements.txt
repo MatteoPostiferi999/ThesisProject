@@ -1,16 +1,4 @@
-# Django backend
-Django>=4.2
-djangorestframework
-
-# Task queue
-celery
-redis
-
-# AI pipeline
-torch
-numpy
-opencv-python
-pillow
-
-# Utilities
-requests
+asgiref==3.8.1
+Django==5.2.1
+pillow==11.2.1
+sqlparse==0.5.3
