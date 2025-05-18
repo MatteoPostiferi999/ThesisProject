@@ -9,6 +9,7 @@ __pycache__/
 *.log
 *.swp
 .DS_Store
+**/.DS_Store
 .env
 .env.*
 
