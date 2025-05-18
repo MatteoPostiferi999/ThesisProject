@@ -1,0 +1,75 @@
+# =========================
+# 📦 Global
+# =========================
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.log
+*.swp
+.DS_Store
+.env
+.env.*
+
+# =========================
+# 🧠 Python / Django
+# =========================
+*.sqlite3
+db.sqlite3
+media/
+venv/
+.env
+*.egg-info/
+celerybeat-schedule
+*.cache
+
+# Migrations (puoi tenerle solo in produzione)
+**/migrations/*
+!**/migrations/__init__.py
+
+# =========================
+# ⚛️ React (frontend)
+# =========================
+frontend/node_modules/
+frontend/.env
+frontend/build/
+frontend/dist/
+
+# =========================
+# 🐳 Docker
+# =========================
+*.pid
+docker-compose.override.yml
+docker/*.log
+docker/nginx/certs/
+docker/nginx/conf.d/*.conf
+
+# =========================
+# 🧪 VSCode / IDEs
+# =========================
+.vscode/
+.idea/
+*.code-workspace
+
+# =========================
+# 🧬 AI Model Stuff
+# =========================
+checkpoints/
+models/
+output/
+inference_results/
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.safetensors
+
+# =========================
+# 📚 Thesis (facoltativo)
+# =========================
+thesis/*.aux
+thesis/*.log
+thesis/*.out
+thesis/*.pdf
+thesis/*.toc

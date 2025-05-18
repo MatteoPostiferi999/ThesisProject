@@ -1,0 +1,16 @@
+# Django backend
+Django>=4.2
+djangorestframework
+
+# Task queue
+celery
+redis
+
+# AI pipeline
+torch
+numpy
+opencv-python
+pillow
+
+# Utilities
+requests
