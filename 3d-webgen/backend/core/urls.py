@@ -1,8 +1,10 @@
 from django.urls import path
-from .views import JobCreateView
+from .views import JobCreateView, JobDetailView
 
 urlpatterns = [
     path('jobs/', JobCreateView.as_view(), name='job-create'),
+    path('jobs/<int:pk>/', JobDetailView.as_view(), name='job-detail'),  
+
 ]
 # This URL pattern maps the path 'jobs/' to the JobCreateView, which handles job creation requests.
 # The name 'job-create' is used to refer to this URL pattern in other parts of the application.
