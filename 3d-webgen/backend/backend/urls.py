@@ -16,8 +16,15 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path('api/', include('core.urls'))
 ]
+
+# The above code is a Django URL configuration file that defines the URL patterns for the backend project.
+# It includes the admin site and the core app's URLs. The `urlpatterns` list is used by Django to route incoming requests to the appropriate view based on the URL.
+# The `include` function allows you to reference other URLconf modules, making it easier to manage URLs in larger projects.
+# The `path` function is used to define URL patterns, where the first argument is the URL path, the second argument is the view to be called, and the third argument is an optional name for the URL pattern.
+# The `admin.site.urls` is a built-in Django URL pattern that provides the admin interface for managing the application.
