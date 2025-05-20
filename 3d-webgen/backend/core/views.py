@@ -18,6 +18,32 @@ class JobCreateView(APIView):
 
 
 
+
 class JobDetailView(RetrieveAPIView):
     queryset = Job.objects.all()
-    serializer_class = JobSerializer
+
+    def get(self, request, *args, **kwargs):
+        job = self.get_object()
+
+        if job.status == "COMPLETED" and job.result_file:
+            return Response({
+                "id": job.id,
+                "status": job.status,
+                "mesh_url": request.build_absolute_uri(job.result_file.url),
+                "created_at": job.created_at,
+                "updated_at": job.updated_at,
+            }, status=status.HTTP_200_OK)
+
+        elif job.status == "FAILED":
+            return Response({
+                "id": job.id,
+                "status": job.status,
+                "error": job.error_message or "Errore non specificato.",
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        else:
+            return Response({
+                "id": job.id,
+                "status": job.status,
+                "message": "La mesh non è ancora pronta. Riprova più tardi."
+            }, status=status.HTTP_202_ACCEPTED)

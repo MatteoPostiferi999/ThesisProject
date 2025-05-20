@@ -17,11 +17,16 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('api/', include('core.urls'))
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # The above code is a Django URL configuration file that defines the URL patterns for the backend project.
 # It includes the admin site and the core app's URLs. The `urlpatterns` list is used by Django to route incoming requests to the appropriate view based on the URL.
