@@ -1,0 +1,1 @@
+#Script that loads Hunyuan3D model with image as an input and generates a 3D model
