@@ -1,22 +1,26 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import JobSerializer
 from rest_framework.generics import RetrieveAPIView
+from .serializers import JobSerializer
 from .models import Job
+from .tasks import generate_mesh_task  
 
-class JobCreateView(APIView):
-    """
-    View to create a new job.
-    """
+
+class GenerateJobView(APIView):
     def post(self, request):
-        serializer = JobSerializer(data=request.data) 
+        serializer = JobSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            job = serializer.save()  # crea il job con status PENDING
+
+            # Esegui il task async
+            model_id = request.data.get('model_id', '4')  # default: modello 4
+            preprocess = request.data.get('preprocess', False)
+
+            generate_mesh_task.delay(job.id, model_id, preprocess)
+
+            return Response({"job_id": job.id, "status": job.status}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 class JobDetailView(RetrieveAPIView):

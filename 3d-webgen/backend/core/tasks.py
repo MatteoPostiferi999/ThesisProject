@@ -1,37 +1,57 @@
-import time
+
 from celery import shared_task
 from .models import Job
-from django.core.files.base import ContentFile
-
-# This is a Celery task that processes a job.
-# It simulates a long-running task by sleeping for 5 seconds,
-# then creates a dummy `.ply` file and saves it to the job's result_file field.
-# The task updates the job's status to "IN_PROGRESS" while processing,
-# and to "COMPLETED" or "FAILED" based on the outcome.
-# The task is decorated with @shared_task, which allows it to be run asynchronously
-# by Celery. The task takes a job_id as an argument, retrieves the job from the database,
-# updates its status, and handles any exceptions that may occur during processing.
+import subprocess
+import os
+from django.conf import settings
+from datetime import datetime
 
 
-# The task is imported in the views.py file and called using the delay() method,
-# which sends the task to the Celery worker for 
-# asynchronous execution. 
+# Celery task to generate mesh using Docker
+# This task is triggered when a new job is created and runs in the background.
+# It uses the Docker image 'matteopostiferi/hunyuan-gpu' to process the input image and generate a mesh.
+# The task updates the job status in the database and handles any errors that may occur during processing.
+# The task takes the job ID, model ID, and a preprocess flag as arguments.
+# The model ID specifies which model to use for mesh generation, and the preprocess flag indicates whether to apply preprocessing steps.
 
 @shared_task
-def process_job(job_id):
+def generate_mesh_task(job_id, model_id="4", preprocess=False):
     try:
         job = Job.objects.get(id=job_id)
         job.status = "IN_PROGRESS"
         job.save()
 
-        time.sleep(5)  # Simula tempo di elaborazione
+        input_path = job.image.path
 
-        # Crea file `.ply` finto
-        dummy_content = b"ply\nformat ascii 1.0\nelement vertex 3\nproperty float x\nproperty float y\nproperty float z\nend_header\n0 0 0\n1 0 0\n0 1 0\n"
-        job.result_file.save(f"job_{job_id}.ply", ContentFile(dummy_content))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"mesh_{job_id}_{timestamp}.ply"
+        output_dir = os.path.join(settings.MEDIA_ROOT, "generated_meshes")
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, filename)
 
+
+        # Monta le cartelle corrette nel container
+        cmd = [
+            "docker", "run", "--rm", "--gpus", "all",
+            "-v", f"{settings.MEDIA_ROOT}/input_images:/input",
+            "-v", f"{settings.MEDIA_ROOT}/generated_meshes:/output",
+            "matteopostiferi/hunyuan-gpu",
+            "--model-id", str(model_id),
+            "--image-path", f"/input/{os.path.basename(input_path)}",
+            "--output-path", f"/output/{filename}",
+        ]
+
+
+        if preprocess:
+            cmd.append("--preprocess")
+
+        subprocess.run(cmd, check=True)
+
+        # Salva il risultato
+        job.result_file.name = f"generated_meshes/{filename}"
         job.status = "COMPLETED"
         job.save()
+
     except Exception as e:
         job.status = "FAILED"
         job.error_message = str(e)

@@ -18,3 +18,4 @@ class Job(models.Model):
 
     def __str__(self):
         return f"Job #{self.id} - {self.status}"
+ 
