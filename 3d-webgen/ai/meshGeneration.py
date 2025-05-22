@@ -8,63 +8,17 @@ from huggingface_hub import snapshot_download
 from hy3dgen.shapegen import Hunyuan3DDiTFlowMatchingPipeline
 import trimesh
 import sys
+import argparse
 
 logging.basicConfig(level=logging.INFO)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 logging.info(f"🖥️ Usando device: {device}")
 
-def select_hunyuan_model():
-    models = {
-        '1': {'name': 'hunyuan3d-dit-v2-mini',      'repo': 'tencent/Hunyuan3D-2mini', 'subfolder': 'hunyuan3d-dit-v2-mini'},
-        '2': {'name': 'hunyuan3d-dit-v2-mini-fast', 'repo': 'tencent/Hunyuan3D-2mini', 'subfolder': 'hunyuan3d-dit-v2-mini-fast'},
-        '3': {'name': 'hunyuan3d-dit-v2-mini-turbo','repo': 'tencent/Hunyuan3D-2mini', 'subfolder': 'hunyuan3d-dit-v2-mini-turbo'},
-        '4': {'name': 'hunyuan3d-dit-v2-0',         'repo': 'tencent/Hunyuan3D-2',     'subfolder': 'hunyuan3d-dit-v2-0'},
-        '5': {'name': 'hunyuan3d-dit-v2-0-fast',    'repo': 'tencent/Hunyuan3D-2',     'subfolder': 'hunyuan3d-dit-v2-0-fast'},
-        '6': {'name': 'hunyuan3d-dit-v2-0-turbo',   'repo': 'tencent/Hunyuan3D-2',     'subfolder': 'hunyuan3d-dit-v2-0-turbo'},
-        '7': {'name': 'hunyuan3d-dit-v2-mv',        'repo': 'tencent/Hunyuan3D-2mv',   'subfolder': 'hunyuan3d-dit-v2-mv'},
-        '8': {'name': 'hunyuan3d-dit-v2-mv-fast',   'repo': 'tencent/Hunyuan3D-2mv',   'subfolder': 'hunyuan3d-dit-v2-mv-fast'},
-        '9': {'name': 'hunyuan3d-dit-v2-mv-turbo',  'repo': 'tencent/Hunyuan3D-2mv',   'subfolder': 'hunyuan3d-dit-v2-mv-turbo'},
-    }
-    print("📦 1–3: mini    4–6: full-scale    7–9: multi-view")
-    for k, v in models.items():
-        print(f" {k}. {v['name']}")
-    choice = None
-    while choice not in models:
-        choice = input("Modello (1–9)? ").strip()
-    return models[choice]
-
-def download_model_and_create_pipeline():
-    model_info = select_hunyuan_model()
-    repo_id = model_info['repo']
-    subfolder = model_info['subfolder']
-
-    logging.info(f"⏬ Scarico da {repo_id}, sotto-cartella {subfolder}…")
-    local_dir = snapshot_download(
-        repo_id=repo_id,
-        allow_patterns=[
-            f"{subfolder}/config.yaml",
-            f"{subfolder}/*.safetensors"
-        ],
-        resume_download=True
-    )
-    logging.info(f"→ Contenuto scaricato in: {local_dir}")
-
-    pipeline = Hunyuan3DDiTFlowMatchingPipeline.from_pretrained(
-        local_dir,
-        subfolder=subfolder,
-        device=device,
-        local_files_only=True
-    )
-    return pipeline, subfolder
-
 def preprocess_image(img: Image.Image, name: str = "input_clean") -> Image.Image:
-    from rembg import remove
-    from PIL import ImageEnhance
-
     img = remove(img)
     img = img.crop(img.getbbox())
-    img = img.resize((512, 512))
+    #img = img.resize((512, 512))
     img = ImageEnhance.Contrast(img).enhance(1.5)
 
     os.makedirs("preprocessed", exist_ok=True)
@@ -73,58 +27,82 @@ def preprocess_image(img: Image.Image, name: str = "input_clean") -> Image.Image
     return img
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate 3D mesh from 2D image using Hunyuan3D.")
 
-def get_image_input(subfolder):
-    is_multiview = 'mv' in subfolder.lower()
-    do_preprocess = input("👉 Vuoi preprocessare le immagini? (s/n): ").strip().lower() == 's'
+    parser.add_argument("--model-id", required=True, choices=[str(i) for i in range(1, 10)], help="Model ID (1–9)")
+    parser.add_argument("--image-path", help="Path to single image (for non-multiview models)")
+    parser.add_argument("--multiview-paths", nargs="+", help="Paths for multiview images in order: front left right back")
+    parser.add_argument("--preprocess", action="store_true", help="Enable background removal and enhancement")
 
-    if is_multiview:
-        logging.info("🔄 Modello multiview selezionato. Fornisci le immagini per le viste disponibili.")
-        image_dict = {}
-        for view in ['front', 'left', 'right', 'back']:
-            path = input(f"Immagine per la vista '{view}' (lascia vuoto per saltare): ").strip()
-            if path:
-                if not os.path.exists(path):
-                    raise FileNotFoundError(f"❌ Immagine non trovata: {path}")
-                img = Image.open(path).convert("RGBA")
-                if do_preprocess:
-                    img = preprocess_image(img, name=view)
-                image_dict[view] = img
-        if not image_dict:
-            raise ValueError("❌ Nessuna immagine fornita per il modello multiview.")
-        return image_dict
+    # Optional inference settings
+    parser.add_argument("--target-face-number", type=int, default=60000)
+    parser.add_argument("--steps", type=int, default=60)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--octree-resolution", type=int, default=256)
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    model = {
+        '1': {'repo': 'tencent/Hunyuan3D-2mini', 'subfolder': 'hunyuan3d-dit-v2-mini'},
+        '2': {'repo': 'tencent/Hunyuan3D-2mini', 'subfolder': 'hunyuan3d-dit-v2-mini-fast'},
+        '3': {'repo': 'tencent/Hunyuan3D-2mini', 'subfolder': 'hunyuan3d-dit-v2-mini-turbo'},
+        '4': {'repo': 'tencent/Hunyuan3D-2',     'subfolder': 'hunyuan3d-dit-v2-0'},
+        '5': {'repo': 'tencent/Hunyuan3D-2',     'subfolder': 'hunyuan3d-dit-v2-0-fast'},
+        '6': {'repo': 'tencent/Hunyuan3D-2',     'subfolder': 'hunyuan3d-dit-v2-0-turbo'},
+        '7': {'repo': 'tencent/Hunyuan3D-2mv',   'subfolder': 'hunyuan3d-dit-v2-mv'},
+        '8': {'repo': 'tencent/Hunyuan3D-2mv',   'subfolder': 'hunyuan3d-dit-v2-mv-fast'},
+        '9': {'repo': 'tencent/Hunyuan3D-2mv',   'subfolder': 'hunyuan3d-dit-v2-mv-turbo'},
+    }[args.model_id]
+
+    # Download model
+    local_dir = snapshot_download(
+        repo_id=model['repo'],
+        allow_patterns=[
+            f"{model['subfolder']}/config.yaml",
+            f"{model['subfolder']}/*.safetensors"
+        ],
+        resume_download=True
+    )
+
+    pipeline = Hunyuan3DDiTFlowMatchingPipeline.from_pretrained(
+        local_dir,
+        subfolder=model['subfolder'],
+        device=device,
+        local_files_only=True
+    )
+
+    # Load image(s)
+    if 'mv' in model['subfolder']:
+        views = ['front', 'left', 'right', 'back']
+        if not args.multiview_paths or len(args.multiview_paths) != 4:
+            raise ValueError("Multiview models require exactly 4 image paths (front, left, right, back).")
+        image_input = {
+            view: preprocess_image(Image.open(p).convert("RGBA"), view) if args.preprocess else Image.open(p).convert("RGBA")
+            for view, p in zip(views, args.multiview_paths)
+        }
     else:
-        path = input("Inserisci il percorso dell'immagine (es. demo.png): ").strip()
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"❌ Immagine non trovata: {path}")
-        img = Image.open(path).convert("RGBA")
-        if do_preprocess:
-            img = preprocess_image(img)
-        return img
+        if not args.image_path:
+            raise ValueError("Single image model requires --image-path.")
+        img = Image.open(args.image_path).convert("RGBA")
+        image_input = preprocess_image(img) if args.preprocess else img
 
-
-
-def generate_and_save_mesh(pipeline, image_input):
+    # Generate mesh
     with torch.no_grad():
         mesh = pipeline(
             image=image_input,
-            target_face_number=60000,
-            inference_steps=60,
-            seed=42,
-            octree_resolution=256
+            target_face_number=args.target_face_number,
+            inference_steps=args.steps,
+            seed=args.seed,
+            octree_resolution=args.octree_resolution
         )[0]
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_path = f"output/output_{timestamp}.ply"
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    os.makedirs("output", exist_ok=True)
     mesh.export(output_path)
-    logging.info(f"✅ Mesh generata e salvata in: {output_path}")
-    return output_path
-
-if __name__ == "__main__":
-    pipeline, subfolder = download_model_and_create_pipeline()
-    image_input = get_image_input(subfolder)
-    if image_input is None:
-        logging.error("⚠️ Nessuna immagine valida fornita.")
-        sys.exit(1)
-    generate_and_save_mesh(pipeline, image_input)
+    logging.info(f"✅ Mesh salvata in: {output_path}")
