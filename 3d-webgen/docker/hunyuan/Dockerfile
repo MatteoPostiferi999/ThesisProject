@@ -1,32 +1,46 @@
-# ✅ Base image with CUDA 12.2 and Ubuntu 22.04
 FROM nvidia/cuda:12.2.2-devel-ubuntu22.04
 
-# ✅ Set working directory
 WORKDIR /workspace
 
-# ✅ Install system dependencies
 RUN apt update && apt install -y \
+    ninja-build \
     python3-pip \
     git \
     build-essential \
-    python3-dev
+    python3-dev \
+    cmake \
+    qtbase5-dev \
+    libglu1-mesa-dev \
+    libeigen3-dev \
+    libgl1-mesa-glx \
+    libxext-dev \
+    libx11-dev \
+    libqt5opengl5-dev \
+    libqt5svg5-dev \
+    libboost-all-dev \
+    libtbb-dev \
+    libpng-dev \
+    libjpeg-dev
 
-# ✅ Clone Hunyuan3D repository
+
+# 🧠 Clone Hunyuan repo
 RUN git clone https://github.com/deepbeepmeep/Hunyuan3D-2GP.git
 
-# ✅ Copy your own AI scripts into the container
-COPY ../../ai ./ai
+# 🧠 Clone and build PyMeshLab from source
+RUN git clone https://github.com/cnr-isti-vclab/PyMeshLab.git && \
+    cd PyMeshLab && \
+    git submodule update --init --recursive && \
+    pip install .
 
-# ✅ Set working directory to the cloned repo
-WORKDIR /workspace/Hunyuan3D-2GP
+# 📥 Copy your code and requirements
+COPY ai ./ai
+COPY docker/hunyuan/requirements.txt ./requirements.txt
 
-# ✅ Fix numpy version for compiled module compatibility
+# 🧠 Fix numpy for compiled modules
 RUN pip install numpy==1.26.4
 
-# ✅ Install PyTorch (with CUDA) and TorchVision
+# 🔥 Install core dependencies
 RUN pip install torch==2.5.1 torchvision torchaudio
-
-# ✅ Install project dependencies and additional libraries
 RUN pip install -r requirements.txt && \
     pip install \
         open3d \
@@ -34,17 +48,17 @@ RUN pip install -r requirements.txt && \
         omegaconf \
         Pillow \
         einops \
-        pymeshlab \
         rembg \
         onnxruntime \
         trimesh \
         diffusers
 
-# ✅ Apply source code patch (fix import names)
+# 🔧 Patch Hunyuan3D import paths
+WORKDIR /workspace/Hunyuan3D-2GP
 RUN sed -i 's/mmgp/hy3dgen/g' gradio_app.py && \
     sed -i 's/mmgp/hy3dgen/g' hy3dgen/shapegen/models/autoencoders/surface_extractors.py && \
     sed -i '/from hy3dgen import offload/d' hy3dgen/shapegen/models/autoencoders/surface_extractors.py
 
-# ✅ Return to workspace root and define the default entry point
+# ✅ Default execution: run mesh generation
 WORKDIR /workspace
 CMD ["python3", "ai/meshGen.py"]

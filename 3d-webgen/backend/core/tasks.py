@@ -31,6 +31,7 @@ def generate_mesh_task(job_id, model_id="4", preprocess=False):
 
 
         # Monta le cartelle corrette nel container
+        # XXX DA CREARE L'IMMAGINE HUNYUAN-GPU XXX
         cmd = [
             "docker", "run", "--rm", "--gpus", "all",
             "-v", f"{settings.MEDIA_ROOT}/input_images:/input",

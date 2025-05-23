@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.ipynb_checkpoints
+.venv/
+env/
+venv/
+
+# OS & Editor files
+.DS_Store
+*.swp
+*.swo
+*.log
+*.bak
+*.tmp
+
+# Git
+.git/
+.gitignore
+
+# Media & generated files
+media/
+input_images/
+generated_meshes/
+preprocessed/
+output/
+*.ply
+*.obj
+*.glb
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Node/JS frontend (if you ever integrate React)
+node_modules/
