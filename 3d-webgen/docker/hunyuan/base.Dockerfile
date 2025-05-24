@@ -41,6 +41,8 @@ RUN git clone https://github.com/deepbeepmeep/Hunyuan3D-2GP.git && \
     sed -i 's/mmgp/hy3dgen/g' gradio_app.py && \
     sed -i 's/mmgp/hy3dgen/g' hy3dgen/shapegen/models/autoencoders/surface_extractors.py && \
     sed -i '/from hy3dgen import offload/d' hy3dgen/shapegen/models/autoencoders/surface_extractors.py
+    
+ENV PYTHONPATH="${PYTHONPATH}:/workspace/Hunyuan3D-2GP"
 
 # Clone e builda PyMeshLab
 RUN git clone https://github.com/cnr-isti-vclab/PyMeshLab.git && \
