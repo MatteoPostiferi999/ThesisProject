@@ -8,21 +8,52 @@ interface ModelOption {
 
 const models: ModelOption[] = [
   {
-    id: 'hunyuan',
-    name: 'Hunyuan 3D',
-    description: 'Fast, reliable and accurate on general objects',
+    id: 'hunyuan-mini-turbo',
+    name: 'Hunyuan3D-DiT-v2-mini-Turbo',
+    description: 'Step Distillation Version – 0.6B – 2025-03-19',
   },
   {
-    id: 'magic123',
-    name: 'Magic123',
-    description: 'High quality, but slower to process',
+    id: 'hunyuan-mini-fast',
+    name: 'Hunyuan3D-DiT-v2-mini-Fast',
+    description: 'Guidance Distillation Version – 0.6B – 2025-03-18',
   },
   {
-    id: 'shapeGen',
-    name: 'ShapeGen Mini',
-    description: 'Optimized for small symmetric objects like cups',
+    id: 'hunyuan-mini',
+    name: 'Hunyuan3D-DiT-v2-mini',
+    description: 'Mini Image to Shape Model – 0.6B – 2025-03-18',
+  },
+  {
+    id: 'hunyuan-mv-turbo',
+    name: 'Hunyuan3D-DiT-v2-mv-Turbo',
+    description: 'Step Distillation Version – 1.1B – 2025-03-19',
+  },
+  {
+    id: 'hunyuan-mv-fast',
+    name: 'Hunyuan3D-DiT-v2-mv-Fast',
+    description: 'Guidance Distillation Version – 1.1B – 2025-03-18',
+  },
+  {
+    id: 'hunyuan-mv',
+    name: 'Hunyuan3D-DiT-v2-mv',
+    description: 'Multiview Image to Shape Model – 1.1B – 2025-03-18',
+  },
+  {
+    id: 'hunyuan-v2-0-turbo',
+    name: 'Hunyuan3D-DiT-v2-0-Turbo',
+    description: 'Step Distillation Model – 1.1B – 2025-03-19',
+  },
+  {
+    id: 'hunyuan-v2-0-fast',
+    name: 'Hunyuan3D-DiT-v2-0-Fast',
+    description: 'Guidance Distillation Model – 1.1B – 2025-02-03',
+  },
+  {
+    id: 'hunyuan-v2-0',
+    name: 'Hunyuan3D-DiT-v2-0',
+    description: 'Image to Shape Model – 1.1B – 2025-01-21',
   },
 ];
+
 
 const ModelSelector = () => {
   const [selectedModel, setSelectedModel] = useState<ModelOption>(models[0]);
@@ -34,8 +65,13 @@ const ModelSelector = () => {
     // Puoi sollevare lo stato al componente genitore se necessario
   };
 
+  
+
   return (
     <div className="relative w-full max-w-md mx-auto">
+      <p className="text-lg font-semibold text-indigo-600 text-center mb-4">
+          Select your model
+      </p>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-md px-4 py-3 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"

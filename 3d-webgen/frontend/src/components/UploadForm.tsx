@@ -34,6 +34,16 @@ const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
     }, 3000);
   };
 
+
+  const handleDeleteImage = () => {
+  if (previewImage) {
+    URL.revokeObjectURL(previewImage); // libera memoria
+  }
+  setSelectedFile(null);
+  setPreviewImage(null);
+  setErrorMessage('');
+};
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
   if (acceptedFiles.length > 0) {
     const file = acceptedFiles[0];
@@ -105,6 +115,7 @@ const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
           />
         ) : (
           <div className="h-full w-full flex flex-col items-center justify-center text-center p-4">
+
             <p className="text-xl font-bold text-indigo-600">Upload Your Image</p>
             <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
               Drag & drop a file here
@@ -113,7 +124,7 @@ const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
         )}
       </div>
 
-      <div className="flex justify-center mt-4">
+      <div className="flex justify-center gap-4 mt-4">
         <button
           type="button"
           onClick={() => open?.()}
@@ -121,7 +132,18 @@ const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
         >
           Choose Image
         </button>
+
+        
+          <button
+            type="button"
+            onClick={handleDeleteImage}
+            className="px-6 py-3 text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-md transition-all text-sm font-semibold"
+          >
+            Delete Image
+          </button>
+        
       </div>
+
 
       <button
         type="submit"
