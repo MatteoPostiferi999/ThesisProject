@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -11,6 +11,7 @@ const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const pollJobStatus = (jobId: number) => {
     const interval = setInterval(async () => {
@@ -30,14 +31,23 @@ const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
         clearInterval(interval);
         toast.error('Error checking job status.');
       }
-    }, 3000); // polling ogni 3 secondi
+    }, 3000);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      setSelectedFile(acceptedFiles[0]);
+  if (acceptedFiles.length > 0) {
+    const file = acceptedFiles[0];
+
+    // Se c'è già un'immagine, rilascia l'oggetto URL precedente
+    if (previewImage) {
+      URL.revokeObjectURL(previewImage);
     }
-  }, []);
+
+    setSelectedFile(file);
+    setPreviewImage(URL.createObjectURL(file));
+  }
+}, [previewImage]);
+
 
   const {
     getRootProps,
@@ -70,8 +80,7 @@ const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
       });
 
       toast.success('Image uploaded successfully!');
-      pollJobStatus(response.data.job_id); // ⬅️ qui inizia il polling, una volta ottenuto l'ID del job
-
+      pollJobStatus(response.data.job_id);
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload image!');
@@ -82,20 +91,25 @@ const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div
+            <div
         {...getRootProps()}
-        className="h-72 w-full border-2 border-dashed border-indigo-400 rounded-2xl p-8 bg-gray-50 dark:bg-gray-800 flex flex-col justify-center items-center"
+        className="relative h-72 w-full border-2 border-dashed border-indigo-400 rounded-2xl bg-gray-50 dark:bg-gray-800 overflow-hidden"
       >
         <input {...getInputProps()} />
-        <p className="text-xl font-bold text-indigo-600">Upload Your Image</p>
-        <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
-          Drag & drop a file here
-        </p>
 
-        {selectedFile && (
-          <p className="mt-4 text-sm text-green-600">
-            Selected: <strong>{selectedFile.name}</strong>
-          </p>
+        {previewImage ? (
+          <img
+            src={previewImage}
+            alt="Preview"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full flex flex-col items-center justify-center text-center p-4">
+            <p className="text-xl font-bold text-indigo-600">Upload Your Image</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
+              Drag & drop a file here
+            </p>
+          </div>
         )}
       </div>
 
