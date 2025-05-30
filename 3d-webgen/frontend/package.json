@@ -12,9 +12,12 @@
   "dependencies": {
     "@react-three/drei": "^10.1.2",
     "@react-three/fiber": "^9.1.2",
+    "lucide-react": "^0.511.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-dropzone": "^14.3.8",
     "react-hot-toast": "^2.5.2",
+    "react-spinners": "^0.17.0",
     "three": "^0.176.0"
   },
   "devDependencies": {
