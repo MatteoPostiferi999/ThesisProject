@@ -4,26 +4,45 @@ from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
 from .serializers import JobSerializer
 from .models import Job
-from .tasks import generate_mesh_task  
+from django.core.files.storage import default_storage
+from django.conf import settings
+import os
+from jobs.tasks import process_image  
+from django.utils.text import slugify
+from uuid import uuid4
 
 
-class GenerateJobView(APIView):
+
+class UploadImageView(APIView):
     def post(self, request):
-        serializer = JobSerializer(data=request.data)
-        if serializer.is_valid():
-            job = serializer.save()  # crea il job con status PENDING
+        image = request.FILES.get('image')
+        if not image:
+            return Response({'error': 'No image uploaded'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Esegui il task async
-            model_id = request.data.get('model_id', '4')  # default: modello 4
-            preprocess = request.data.get('preprocess', False)
+        # Crea job vuoto
+        job = Job.objects.create(status='PENDING')
 
-            generate_mesh_task.delay(job.id, model_id, preprocess)
+        # Crea filename unico
+        filename = f"{job.id}_{slugify(image.name)}"
+        relative_path = f"jobs/{filename}"
 
-            return Response({"job_id": job.id, "status": job.status}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Salva immagine
+        path = default_storage.save(relative_path, image)
+
+        # Salva percorso nel Job (se hai image=ImageField)
+        job.image.name = path  # salva path relativo a MEDIA_ROOT
+        job.save()
+
+        # Avvia il task Celery
+    
+        full_path = os.path.join(settings.MEDIA_ROOT, path)
+        process_image.delay(job.id, full_path)
+
+        return Response({'job_id': job.id, 'status': 'PENDING'}, status=status.HTTP_201_CREATED)
 
 
-class JobDetailView(RetrieveAPIView):
+
+class JobResultView(RetrieveAPIView):
     queryset = Job.objects.all()
 
     def get(self, request, *args, **kwargs):
@@ -51,3 +70,25 @@ class JobDetailView(RetrieveAPIView):
                 "status": job.status,
                 "message": "La mesh non è ancora pronta. Riprova più tardi."
             }, status=status.HTTP_202_ACCEPTED)
+
+
+class JobStatusView(APIView):
+    def get(self, request, job_id):
+        job = Job.objects.get(id=job_id)
+        return Response({'status': job.status, 'output_path': job.output_path})
+
+
+class GenerateJobView(APIView):
+    def post(self, request):
+        serializer = JobSerializer(data=request.data)
+        if serializer.is_valid():
+            job = serializer.save()  # crea il job con status PENDING
+
+            # Esegui il task async
+            model_id = request.data.get('model_id', '4')  # default: modello 4
+            preprocess = request.data.get('preprocess', False)
+
+            generate_mesh_task.delay(job.id, model_id, preprocess)
+
+            return Response({"job_id": job.id, "status": job.status}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

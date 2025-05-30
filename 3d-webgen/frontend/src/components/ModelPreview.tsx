@@ -1,7 +1,7 @@
 import React from 'react';
 
 type ModelPreviewProps = {
-  modelUrl?: string; // Es. URL al .glb, .obj o pagina viewer
+  modelUrl: string | null;
 };
 
 const ModelPreview: React.FC<ModelPreviewProps> = ({ modelUrl }) => {
@@ -13,14 +13,11 @@ const ModelPreview: React.FC<ModelPreviewProps> = ({ modelUrl }) => {
         </h2>
 
         {modelUrl ? (
-          <div className="w-full h-[600px] bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-indigo-200 dark:border-indigo-700 transition-all">
-            {/* Puoi sostituire con un visualizzatore reale */}
-            <iframe
+          <div className="w-full h-[600px] bg-gray-100 dark:bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-indigo-200 dark:border-indigo-700 transition-all flex items-center justify-center">
+            <img
               src={modelUrl}
-              title="3D Model Viewer"
-              frameBorder="0"
-              allowFullScreen
-              className="w-full h-full"
+              alt="3D Model Result"
+              className="max-h-full max-w-full object-contain"
             />
           </div>
         ) : (

@@ -45,6 +45,8 @@ def parse_args():
 
 
 if __name__ == "__main__":
+    print("🚀 Inizio esecuzione meshGen.py")
+
     args = parse_args()
 
     model = {

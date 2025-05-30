@@ -1,40 +1,83 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
-const UploadForm = () => {
+type UploadFormProps = {
+  setModelUrl: (url: string) => void;
+};
+
+const UploadForm: React.FC<UploadFormProps> = ({ setModelUrl }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // 1. Gestore drop
+  const pollJobStatus = (jobId: number) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(`http://localhost:8000/api/job/${jobId}/`);
+        const status = response.data.status;
+
+        if (status === 'COMPLETED') {
+          clearInterval(interval);
+          setModelUrl(response.data.mesh_url);
+          toast.success('3D model ready!');
+        } else if (status === 'FAILED') {
+          clearInterval(interval);
+          toast.error('Failed to generate 3D model.');
+        }
+      } catch (err) {
+        clearInterval(interval);
+        toast.error('Error checking job status.');
+      }
+    }, 3000); // polling ogni 3 secondi
+  };
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setSelectedFile(acceptedFiles[0]);
     }
   }, []);
 
-  // 2. useDropzone con open + noClick
   const {
     getRootProps,
     getInputProps,
-    open, // <-- da usare nel bottone
-    isDragActive,
+    open,
   } = useDropzone({
     onDrop,
-    accept: {
-      'image/*': [],
-    },
+    accept: { 'image/*': [] },
     multiple: false,
-    noClick: true, // impedisce apertura automatica cliccando sul riquadro
+    noClick: true,
   });
 
-  // 3. Submit
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
     if (!selectedFile) {
-      alert('Please select an image');
+      setErrorMessage('⚠️ Please upload a 2D image first.');
       return;
     }
-    console.log('Uploading file:', selectedFile.name);
-    // Qui metterai la logica vera di upload
+
+    setLoading(true);
+    setErrorMessage('');
+
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/upload/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      toast.success('Image uploaded successfully!');
+      pollJobStatus(response.data.job_id); // ⬅️ qui inizia il polling, una volta ottenuto l'ID del job
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,23 +99,25 @@ const UploadForm = () => {
         )}
       </div>
 
-<div className="flex justify-center mt-4">
-  <button
-    type="button"
-    onClick={() => open?.()}
-    className="px-6 py-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all text-sm font-semibold"
-  >
-    Choose Image
-  </button>
-</div>
+      <div className="flex justify-center mt-4">
+        <button
+          type="button"
+          onClick={() => open?.()}
+          className="px-6 py-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all text-sm font-semibold"
+        >
+          Choose Image
+        </button>
+      </div>
 
-      {/* 5. Bottone Submit */}
       <button
         type="submit"
+        disabled={loading}
         className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 w-full"
       >
-        Generate 3D
+        {loading ? 'Uploading...' : 'Generate 3D'}
       </button>
+
+      {errorMessage && <p className="text-red-500 text-sm mt-2">{errorMessage}</p>}
     </form>
   );
 };

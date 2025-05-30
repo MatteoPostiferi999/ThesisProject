@@ -38,7 +38,10 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "core", 
-    "rest_framework"
+    "rest_framework",
+    'corsheaders',
+    'jobs',
+
  # Custom app for handling jobs
 ]
 
@@ -50,6 +53,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
+
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
 ]
 
 ROOT_URLCONF = "backend.urls"
@@ -134,5 +143,7 @@ CELERY_TASK_SERIALIZER = "json"
 import os
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'backend/media')
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # quindi .../3d-webgen/backend/media
+
+# CORS_ALLOW_ALL_ORIGINS = True  # oppure usa CORS_ALLOWED_ORIGINS

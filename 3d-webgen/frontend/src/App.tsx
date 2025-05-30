@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import ModelSelector from './components/ModelSelector';
@@ -7,6 +7,10 @@ import ModelPreview from './components/ModelPreview';
 import TechnicalInfo from './components/TechnicalInfo';
 import Footer from './components/Footer';
 import ThemeToggle from './components/ThemeToggle';
+import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify';
+
+
 
 function App() {
   // Dati tecnici di esempio (da sostituire con reali)
@@ -17,6 +21,9 @@ function App() {
     fileSizeMB: 4.62,
     generationTime: 11,
   };
+
+  // 1. Stato in App.tsx
+  const [modelUrl, setModelUrl] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white transition-colors duration-300">
@@ -35,14 +42,14 @@ function App() {
             <ModelSelector />
           </div>
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-6">
-            <UploadForm />
+            <UploadForm setModelUrl={setModelUrl} />
           </div>
         </div>
 
         {/* Right: Preview + Info */}
         <div className="space-y-8">
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-6">
-            <ModelPreview />
+           <ModelPreview modelUrl={modelUrl} />
           </div>
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-6">
             <TechnicalInfo {...modelData} />
@@ -55,8 +62,11 @@ function App() {
 
       {/* Footer */}
       <Footer />
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
     </div>
+    
   );
+  
 }
 
 export default App;
