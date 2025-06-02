@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import Navbar from './components/Navbar';
-import HeroSection from './components/HeroSection';
-import ModelSelector from './components/ModelSelector';
-import UploadForm from './components/UploadForm';
-import ModelPreview from './components/ModelPreview';
-import TechnicalInfo from './components/TechnicalInfo';
-import Footer from './components/Footer';
+import Navbar from './components/layouts/Navbar';
+import HeroSection from './components/layouts/HeroSection';
+import ModelSelector from './components/features/ModelSelector';
+import UploadForm from './components/features/UploadForm';
+import ModelPreview from './components/features/ModelPreview';
+import TechnicalInfo from './components/features/TechnicalInfo';
+import Footer from './components/layouts/Footer';
 import ThemeToggle from './components/ThemeToggle';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
