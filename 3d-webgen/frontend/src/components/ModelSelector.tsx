@@ -1,11 +1,11 @@
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent } from "./ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
+} from "./ui/select";
 import { Box } from "lucide-react";
 
 export type ModelType =
@@ -29,47 +29,47 @@ const ModelSelector = ({ selectedModel, onModelSelect }: ModelSelectorProps) => 
     {
       id: 'hunyuan-mini-turbo',
       name: 'Hunyuan3D-DiT-v2-mini-Turbo',
-      description: 'Step Distillation Version – 0.6B – 2025-03-19',
+      description: 'Step Distillation Version – 0.6B ',
     },
     {
       id: 'hunyuan-mini-fast',
       name: 'Hunyuan3D-DiT-v2-mini-Fast',
-      description: 'Guidance Distillation Version – 0.6B – 2025-03-18',
+      description: 'Guidance Distillation Version – 0.6B ',
     },
     {
       id: 'hunyuan-mini',
       name: 'Hunyuan3D-DiT-v2-mini',
-      description: 'Mini Image to Shape Model – 0.6B – 2025-03-18',
+      description: 'Mini Image to Shape Model – 0.6B ',
     },
     {
       id: 'hunyuan-mv-turbo',
       name: 'Hunyuan3D-DiT-v2-mv-Turbo',
-      description: 'Step Distillation Version – 1.1B – 2025-03-19',
+      description: 'Step Distillation Version – 1.1B ',
     },
     {
       id: 'hunyuan-mv-fast',
       name: 'Hunyuan3D-DiT-v2-mv-Fast',
-      description: 'Guidance Distillation Version – 1.1B – 2025-03-18',
+      description: 'Guidance Distillation Version – 1.1B ',
     },
     {
       id: 'hunyuan-mv',
       name: 'Hunyuan3D-DiT-v2-mv',
-      description: 'Multiview Image to Shape Model – 1.1B – 2025-03-18',
+      description: 'Multiview Image to Shape Model – 1.1B ',
     },
     {
       id: 'hunyuan-v2-0-turbo',
       name: 'Hunyuan3D-DiT-v2-0-Turbo',
-      description: 'Step Distillation Model – 1.1B – 2025-03-19',
+      description: 'Step Distillation Model – 1.1B ',
     },
     {
       id: 'hunyuan-v2-0-fast',
       name: 'Hunyuan3D-DiT-v2-0-Fast',
-      description: 'Guidance Distillation Model – 1.1B – 2025-02-03',
+      description: 'Guidance Distillation Model – 1.1B ',
     },
     {
       id: 'hunyuan-v2-0',
       name: 'Hunyuan3D-DiT-v2-0',
-      description: 'Image to Shape Model – 1.1B – 2025-01-21',
+      description: 'Image to Shape Model – 1.1B ',
     },
   ];
 

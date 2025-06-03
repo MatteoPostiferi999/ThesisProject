@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from "react";
-import { toast } from "../components/ui/sonner";
-import type { ModelType } from "../components/features/ModelSelector";
+import { toast } from "@/components/ui/sonner";
+import { ModelType } from "@/components/ModelSelector";
 
 interface UseImageUploadProps {
   onImageUploaded: (imageDataUrl: string) => void;
@@ -39,7 +39,6 @@ export const useImageUpload = ({ onImageUploaded }: UseImageUploadProps) => {
     handleFileDrop
   };
 };
-
 
 export const getModelName = (selectedModel: ModelType): string => {
   switch (selectedModel) {

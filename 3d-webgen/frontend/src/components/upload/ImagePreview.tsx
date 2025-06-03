@@ -1,10 +1,10 @@
 
 import React, { useRef, useEffect, useState } from "react";
-import { Card, CardContent } from "../ui/card";
-import { Button } from "../ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { RefreshCw, Trash2, CheckCircle } from "lucide-react";
-import type { ModelType } from "../features/ModelSelector";
-import { getModelName } from "../../hooks/useImageUpload";
+import { ModelType } from "@/components/ModelSelector";
+import { getModelName } from "@/hooks/useImageUpload";
 
 interface ImagePreviewProps {
   imageSrc: string;

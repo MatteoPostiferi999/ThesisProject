@@ -1,7 +1,7 @@
 
 import { Eye, Download, Maximize, Trash2, ZoomIn, ZoomOut } from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Slider } from "../../components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 interface ModelControlsProps {
   isFullScreen: boolean;
@@ -66,10 +66,9 @@ const ModelControls = ({
           min={0}
           max={360}
           step={1}
-          onValueChange={(value: number[]) => {
-          onRotationChange(value[0] / 30);
+          onValueChange={(value) => {
+            onRotationChange(value[0] / 30);
           }}
-
           className="flex-1"
         />
         <Button 

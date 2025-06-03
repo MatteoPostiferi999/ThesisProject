@@ -29,15 +29,15 @@ def process_image(job_id, input_path):
         time.sleep(2)  # tempo fittizio
 
         # Simula risultato copiando una mesh finta
-        fake_output_path = os.path.join(settings.MEDIA_ROOT, 'black_mesh.jpg')
-        result_path = os.path.join(settings.MEDIA_ROOT, 'results', f'{job_id}_result.jpg')
+        fake_output_path = os.path.join(settings.MEDIA_ROOT, 'PROVA.obj')
+        result_path = os.path.join(settings.MEDIA_ROOT, 'results', f'{job_id}_mesh.obj')
 
 
         with open(fake_output_path, 'rb') as fsrc, open(result_path, 'wb') as fdst:
             fdst.write(fsrc.read())
 
         # Salva path nel job
-        job.result_file.name = f"results/{job_id}_result.jpg"
+        job.result_file.name = f"results/{job_id}_mesh.obj"
         job.status = 'COMPLETED'
         job.save()
     except Exception as e:
