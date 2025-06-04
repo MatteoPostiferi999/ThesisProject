@@ -13,7 +13,7 @@ const AuthPage = () => {
           {mode === "register" ? "Create an Account" : "Welcome Back"}
         </h2>
 
-        {mode === "register" ? <RegisterForm /> : <LoginForm />}
+        {mode === "register" ? <RegisterForm onSuccess={() => setMode("login")} /> : <LoginForm />}
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
           {mode === "register" ? (

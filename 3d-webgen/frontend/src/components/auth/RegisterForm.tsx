@@ -2,7 +2,12 @@ import { useState } from "react";
 import axios from "axios";
 import { toast } from "sonner"; // se vuoi mostrare notifiche
 
-const RegisterForm = () => {
+type RegisterFormProps = {
+  onSuccess: () => void;
+};
+
+const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
+
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -22,6 +27,8 @@ const RegisterForm = () => {
       const response = await axios.post("http://localhost:8000/api/users/register/", formData);
       toast.success("Registration successful!");
       console.log("Registered user:", response.data);
+      onSuccess();
+
     } catch (error: any) {
       console.error("Registration failed:", error);
       console.error("Registration failed2:", error.response?.data || error.message);
