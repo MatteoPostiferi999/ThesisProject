@@ -1,12 +1,16 @@
 import { useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const LoginForm = () => {
+  const navigate = useNavigate();
+
   const [credentials, setCredentials] = useState({
     username: "",
     password: "",
   });
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
@@ -15,7 +19,6 @@ const LoginForm = () => {
  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
-
   try {
     const response = await axios.post("http://localhost:8000/api/users/login/", credentials);
     const token = response.data.token;
@@ -23,7 +26,10 @@ const LoginForm = () => {
     // Salva il token nel localStorage per sessione utente
     localStorage.setItem("authToken", token);
     toast.success("Login successful!");
-    // Redirect o cambio pagina se serve
+    console.log("Logged in user:", response.data);
+    navigate("/home");
+
+
   } catch (error: any) {
     console.error("Login error:", error);
     console.log("Server response:", error.response?.data); 
