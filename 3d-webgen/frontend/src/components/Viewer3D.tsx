@@ -12,11 +12,21 @@ import ModelActionButtons from "@/components/viewer/ModelActionButtons";
 import NoModelPlaceholder from "@/components/viewer/NoModelPlaceholder";
 import { useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three-stdlib";
+import { useRef, useEffect } from "react";
+import * as THREE from "three";
 
-const OBJModel = ({ url }: { url: string }) => {
-  if (!url) return null;
+
+const OBJModel = ({ url, rotation }: { url: string; rotation: { x: number; y: number; z: number } }) => {
   const obj = useLoader(OBJLoader, url);
-  return <primitive object={obj} scale={1.5} />;
+  const ref = useRef<THREE.Object3D>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.rotation.set(rotation.x, rotation.y, rotation.z);
+    }
+  }, [rotation]);
+
+  return <primitive ref={ref} object={obj} scale={1.5} />;
 };
 
 
@@ -29,6 +39,8 @@ interface Viewer3DProps {
 
 const Viewer3D = ({ modelUrl, onModelDelete }: Viewer3DProps) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
+const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
+
 
   // Opzionalmente disattiva zoom/rotazione se non ti servono più
   const handleFullScreen = () => {
@@ -72,17 +84,17 @@ return (
               <ambientLight intensity={0.8} />
               <directionalLight position={[10, 10, 5]} intensity={1.5} />
               <Suspense fallback={null}>
-                <OBJModel url={modelUrl} />
+              <OBJModel url={modelUrl} rotation={rotation} />
               </Suspense>
               <OrbitControls enableZoom />
             </Canvas>
 
             <ModelControls
               isFullScreen={isFullScreen}
-              rotation={0}
+              rotation={rotation}
               autoRotate={false}
               zoom={1}
-              onRotationChange={() => {}}
+              onRotationChange={setRotation}
               onZoomIn={() => {}}
               onZoomOut={() => {}}
               onFullScreen={handleFullScreen}
@@ -96,7 +108,7 @@ return (
     </CardContent>
   </Card>
 );
-
 }
+
 
 export default Viewer3D;
