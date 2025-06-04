@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "core", 
+    "users",
     "rest_framework",
     'corsheaders',
     'jobs',
@@ -149,3 +150,4 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # quindi .../3d-webgen/backend/media
 
 # CORS_ALLOW_ALL_ORIGINS = True  # oppure usa CORS_ALLOWED_ORIGINS
+
