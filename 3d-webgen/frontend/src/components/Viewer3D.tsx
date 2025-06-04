@@ -102,7 +102,9 @@ return (
             />
           </div>
 
-          <ModelActionButtons onModelDelete={handleDeleteModel} />
+          <ModelActionButtons onModelDelete={handleDeleteModel}
+          modelUrl={modelUrl!} 
+            />
         </div>
       )}
     </CardContent>
