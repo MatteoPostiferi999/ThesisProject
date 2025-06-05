@@ -7,6 +7,10 @@ import ImagePreview from "./upload/ImagePreview";
 import Generate3DButton from "@/components/generate3DButton";
 import axios from "axios";
 import ProcessingStatus from "@/components/ProcessingStatus";
+import { getJobStatus } from "@/services/api/jobService"; 
+import { uploadImage } from "@/services/api/jobService";
+import { Link } from "react-router-dom";
+
 
 
 type StatusType = 'idle' | 'uploading' | 'processing' | 'completed' | 'error';
@@ -20,8 +24,6 @@ interface ImageUploaderProps {
   onGenerate: () => void;
   isProcessing: boolean;
 }
-
-
 
 const ImageUploader = ({ 
   onImageUploaded, 
@@ -41,49 +43,46 @@ const ImageUploader = ({
 const pollJobStatus = (jobId: number) => {
   setStatus("processing");
 
-  const interval = setInterval(async () => {
-    try {
-      const response = await axios.get(`http://localhost:8000/api/job/${jobId}/`);
-      const jobStatus = response.data.status;
-      const jobProgress = response.data.progress ?? 0;
+const interval = setInterval(async () => {
+  try {
+    const data = await getJobStatus(jobId); 
+    const jobStatus = data.status;
+    const jobProgress = data.progress ?? 0;
 
-      console.log("[POLL] Job status:", jobStatus);
-      console.log("[POLL] Full response:", response.data);
+    console.log("[POLL] Job status:", jobStatus);
+    console.log("[POLL] Full response:", data);
 
-      if (jobStatus === "COMPLETED") {
-        clearInterval(interval);
+    if (jobStatus === "COMPLETED") {
+      clearInterval(interval);
 
-        console.log("[POLL] Job completed ✅");
-        console.log("[POLL] mesh_url:", response.data.mesh_url);
-        console.log("[POLL] Simulated model3DUrl:", response.data.mesh_url);
-        console.log("[POLL] hasStartedGeneration: true");
-        console.log("[POLL] isProcessing: false");
+      console.log("[POLL] Job completed ✅");
+      console.log("[POLL] mesh_url:", data.mesh_url);
 
-        if (response.data.mesh_url) {
-          setModelUrl(response.data.mesh_url);
-          setStatus("completed");
-          toast.success("3D model ready!");
-        } else {
-          setStatus("error");
-          toast.error("Mesh URL missing from response.");
-        }
-
-      } else if (jobStatus === "FAILED") {
-        clearInterval(interval);
-        setStatus("error");
-        toast.error("Failed to generate 3D model.");
+      if (data.mesh_url) {
+        setModelUrl(data.mesh_url);
+        setStatus("completed");
+        toast.success("3D model ready!");
       } else {
-        setProgress(jobProgress);
-        console.log("[POLL] Progress:", jobProgress);
+        setStatus("error");
+        toast.error("Mesh URL missing from response.");
       }
 
-    } catch (err) {
+    } else if (jobStatus === "FAILED") {
       clearInterval(interval);
       setStatus("error");
-      console.error("[POLL] Error during status check:", err);
-      toast.error("Error checking job status.");
+      toast.error("Failed to generate 3D model.");
+    } else {
+      setProgress(jobProgress);
+      console.log("[POLL] Progress:", jobProgress);
     }
-  }, 1000);
+
+  } catch (err) {
+    clearInterval(interval);
+    setStatus("error");
+    console.error("[POLL] Error during status check:", err);
+    toast.error("Error checking job status.");
+  }
+}, 1000);
 };
 
 
@@ -96,21 +95,21 @@ const handleGenerate3D = async () => {
   setStatus("uploading");
   setHasStartedGeneration(true);
 
-  // Fai fetch dell’immagine convertita in File
-  const response = await fetch(uploadedImage);
-  const blob = await response.blob();
-  const file = new File([blob], "image.jpg", { type: blob.type });
+  try {
+    const response = await fetch(uploadedImage);
+    const blob = await response.blob();
+    const file = new File([blob], "image.jpg", { type: blob.type });
 
-  // Upload al backend
-  const formData = new FormData();
-  formData.append("image", file);
+    const formData = new FormData();
+    formData.append("image", file);
 
-  const uploadResponse = await axios.post("http://localhost:8000/api/upload/", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-
-  // Solo ora: avvia il polling per il job!
-  pollJobStatus(uploadResponse.data.job_id);
+    const uploadResponse = await uploadImage(formData); 
+    pollJobStatus(uploadResponse.job_id);              
+  } catch (err) {
+    console.error("Upload failed:", err);
+    toast.error("Failed to upload image.");
+    setStatus("error");
+  }
 };
 
   const { error, isDragging, setIsDragging, handleFileDrop } = useImageUpload({
@@ -168,13 +167,23 @@ const handleGenerate3D = async () => {
     />
   </div>
 ) : (
-  <UploadDropzone
-    onDrop={handleFileDrop}
-    isDragging={isDragging}
-    setIsDragging={setIsDragging}
-    error={error}
-  />
-)}
+  <>
+    <UploadDropzone
+      onDrop={handleFileDrop}
+      isDragging={isDragging}
+      setIsDragging={setIsDragging}
+      error={error}
+    />
+    <Link
+      to="/history"
+      className="mt-6 inline-block bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 text-sm"
+    >
+      View My History
+    </Link>
+  </>
+)
+
+}
 
     </div>
   );

@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { loginUser } from "@/services/api/authService"; 
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -20,13 +21,13 @@ const LoginForm = () => {
   e.preventDefault();
 
   try {
-    const response = await axios.post("http://localhost:8000/api/users/login/", credentials);
-    const token = response.data.token;
+    const data = await loginUser(credentials); // <-- chiamata pulita
+    const token = data.token;
 
     // Salva il token nel localStorage per sessione utente
     localStorage.setItem("authToken", token);
     toast.success("Login successful!");
-    console.log("Logged in user:", response.data);
+    console.log("Logged in user:", data);
     navigate("/home");
 
 

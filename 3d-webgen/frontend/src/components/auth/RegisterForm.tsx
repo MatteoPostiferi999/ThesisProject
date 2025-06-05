@@ -1,6 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
-import { toast } from "sonner"; // se vuoi mostrare notifiche
+import { toast } from "sonner"; 
+import { registerUser } from "@/services/api/authService"; 
+
 
 type RegisterFormProps = {
   onSuccess: () => void;
@@ -20,24 +22,26 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      const response = await axios.post("http://localhost:8000/api/users/register/", formData);
-      toast.success("Registration successful!");
-      console.log("Registered user:", response.data);
-      onSuccess();
+  try {
+    const data = await registerUser(formData);
 
-    } catch (error: any) {
-      console.error("Registration failed:", error);
-      console.error("Registration failed2:", error.response?.data || error.message);
+    toast.success("Registration successful!");
+    console.log("Registered user:", data);
 
-      toast.error("Registration failed. Please check your input.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    onSuccess(); // es. redirect alla login
+  } catch (error: any) {
+    console.error("Registration failed:", error);
+    console.log("Status:", error.response?.status);
+    console.log("Data:", error.response?.data);
+    toast.error("Registration failed.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

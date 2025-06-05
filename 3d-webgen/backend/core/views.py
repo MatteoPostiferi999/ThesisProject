@@ -1,9 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions, viewsets
 from rest_framework.generics import RetrieveAPIView
-from .serializers import JobSerializer
-from .models import Job
+from .serializers import JobSerializer, GeneratedModelSerializer
+from .models import Job, GeneratedModel
 from django.core.files.storage import default_storage
 from django.conf import settings
 import os
@@ -92,3 +92,15 @@ class GenerateJobView(APIView):
 
             return Response({"job_id": job.id, "status": job.status}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class GeneratedModelViewSet(viewsets.ModelViewSet):
+    serializer_class = GeneratedModelSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return GeneratedModel.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

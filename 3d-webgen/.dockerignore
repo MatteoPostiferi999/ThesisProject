@@ -1,39 +1,48 @@
-# Python
+# Python cache & venv
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.ipynb_checkpoints
+*.egg-info/
 .venv/
 env/
 venv/
 
-# OS & Editor files
+# System & Editor files
 .DS_Store
 *.swp
 *.swo
 *.log
 *.bak
 *.tmp
+*.idea/
+*.vscode/
 
 # Git
 .git/
 .gitignore
 
-# Media & generated files
+# Outputs & media
 media/
 input_images/
 generated_meshes/
 preprocessed/
-output/
+outputs/
 *.ply
 *.obj
 *.glb
 
+# Frontend
+node_modules/
+*.lockb
+dist/
+
 # Build artifacts
 build/
-dist/
-*.egg-info/
+docker/hunyuan/__pycache__/
+docker/hunyuan/*.pyc
+docker/hunyuan/media/
 
-# Node/JS frontend (if you ever integrate React)
-node_modules/
+# Docker cache mount dirs (if used)
+cache/

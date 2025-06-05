@@ -1,13 +1,23 @@
-from django.urls import path
-from .views import GenerateJobView, JobResultView, UploadImageView, JobStatusView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    GenerateJobView,
+    JobResultView,
+    UploadImageView,
+    JobStatusView,
+    GeneratedModelViewSet, 
+)
 
-# core/urls.py
+router = DefaultRouter()
+router.register(r'models', GeneratedModelViewSet, basename='generatedmodel')
+
 urlpatterns = [
-    path('jobs/', GenerateJobView.as_view(), name='job-create'),         # POST per creare job
-    path('job/<int:pk>/', JobResultView.as_view(), name='job-detail'),  # GET per polling
-    path('upload/', UploadImageView.as_view(), name='upload')
-
+    path('jobs/', GenerateJobView.as_view(), name='job-create'),
+    path('job/<int:pk>/', JobResultView.as_view(), name='job-detail'),
+    path('upload/', UploadImageView.as_view(), name='upload'),
+    path('', include(router.urls)), 
 ]
+
 
 # This URL pattern maps the path 'jobs/' to the JobCreateView, which handles job creation requests.
 # The name 'job-create' is used to refer to this URL pattern in other parts of the application.

@@ -5,3 +5,11 @@ export interface Model3D {
   format: string;
   size?: number;
 }
+
+export type GeneratedModel = {
+  id: number;
+  input_image: string;
+  output_model: string;
+  model_name: string;
+  created_at: string;
+};

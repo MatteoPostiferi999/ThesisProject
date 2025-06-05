@@ -6,6 +6,8 @@ from rest_framework.authtoken.models import Token
 
 class RegisterView(APIView):
     def post(self, request):
+        print("Request data:", request.data) 
+
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()

@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.venv/
-media/
-*.DS_Store
-.git/
-*.gitignore

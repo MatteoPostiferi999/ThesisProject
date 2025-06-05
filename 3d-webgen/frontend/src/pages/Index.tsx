@@ -1,6 +1,6 @@
 import Hero from "@/components/Hero";
 import Footer from "@/components/Footer";
-import ModelWorkflow from "@/components/ModelWorkFlow";
+import ModelWorkflow from "@/components/ModelWorkflow";
 
 const Index = () => {
   return (
