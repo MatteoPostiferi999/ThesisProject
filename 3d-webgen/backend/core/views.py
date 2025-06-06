@@ -11,12 +11,15 @@ from jobs.tasks import process_image
 from django.utils.text import slugify
 from uuid import uuid4
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
+from rest_framework.permissions import AllowAny
+
 
 
 
 
 class UploadImageView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # Permette a chiunque di caricare immagini
 
     def post(self, request):
         image = request.FILES.get('image')
@@ -76,11 +79,22 @@ class JobResultView(RetrieveAPIView):
             }, status=status.HTTP_202_ACCEPTED)
 
 
-class JobStatusView(APIView):
-    def get(self, request, job_id):
-        job = Job.objects.get(id=job_id)
-        return Response({'status': job.status, 'output_path': job.output_path})
 
+class JobStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, job_id):
+        try:
+            job = Job.objects.get(id=job_id)
+            mesh_url = request.build_absolute_uri(job.result_file.url) if job.result_file else None
+            return Response({
+                'status': job.status,
+                'mesh_url': mesh_url,
+                'progress': 100 if job.status == "COMPLETED" else 0
+            })
+        except Job.DoesNotExist:
+            raise NotFound("Job not found")
+        
 
 class GenerateJobView(APIView):
     def post(self, request):

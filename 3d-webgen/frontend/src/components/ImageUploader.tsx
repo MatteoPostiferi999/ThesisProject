@@ -56,47 +56,41 @@ const pollJobStatus = (jobId: number) => {
       if (jobStatus === "COMPLETED") {
         clearInterval(interval);
 
-        console.log("[POLL] Job completed ✅");
-        console.log("[POLL] mesh_url:", data.mesh_url);
-
-        if (data.mesh_url) {
-          setModelUrl(data.mesh_url);
-          setStatus("completed");
-          toast.success("3D model ready!");
-
-          // 🟨 Salvataggio nel backend
-          const token = localStorage.getItem("authToken");
-          console.log("Token usato per salvataggio modello:", token);
-          if (!token) {
-            toast.error("User not authenticated");
-            return;
-          }
-
-          try {
-            await axios.post(
-              "/api/generated-models/save/",
-              {
-                input_image: uploadedImage,
-                output_model: data.mesh_url,
-                model_name: selectedModel, 
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  
-                },
-              }
-            );
-            toast.success("Model saved to your history!");
-            console.log("✅ Model saved to history");
-          } catch (saveErr) {
-            console.error("❌ Failed to save model:", saveErr);
-            toast.error("Could not save model to history.");
-          }
-
-        } else {
+        if (!data.mesh_url) {
           setStatus("error");
           toast.error("Mesh URL missing from response.");
+          return;
+        }
+
+        setModelUrl(data.mesh_url);
+        setStatus("completed");
+        toast.success("3D model ready!");
+
+        const token = localStorage.getItem("authToken");
+        if (!token || !uploadedImage || !selectedModel) {
+          toast.error("Missing info for saving model.");
+          return;
+        }
+
+        try {
+          await axios.post(
+            "/api/generated-models/save/",
+            {
+              input_image: uploadedImage,
+              output_model: data.mesh_url,
+              model_name: selectedModel,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          toast.success("Model saved to your history!");
+          console.log("✅ Model saved to history");
+        } catch (saveErr) {
+          console.error("❌ Failed to save model:", saveErr);
+          toast.error("Could not save model to history.");
         }
 
       } else if (jobStatus === "FAILED") {

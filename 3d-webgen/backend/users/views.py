@@ -6,11 +6,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.permissions import AllowAny
 
-
-
-
 class RegisterView(APIView):
-    permission_classes = [AllowAny]  # 👈 aggiungi questa riga
+    permission_classes = [AllowAny]  
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
