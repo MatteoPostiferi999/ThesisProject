@@ -21,7 +21,6 @@ export const getJobStatus = async (jobId: number) => {
 export const uploadImage = async (formData: FormData) => {
   const token = localStorage.getItem("authToken");
 
-  // 🔍 Debug: stampa il token
   console.log("🔑 Token presente in localStorage:", token);
 
   if (!token) {
@@ -30,7 +29,6 @@ export const uploadImage = async (formData: FormData) => {
   }
 
   try {
-    // 🔍 Debug: stampa formData contenuto (non sempre leggibile direttamente)
     for (let pair of formData.entries()) {
       console.log(`📤 FormData: ${pair[0]} =`, pair[1]);
     }
@@ -43,7 +41,14 @@ export const uploadImage = async (formData: FormData) => {
     });
 
     console.log("✅ Upload riuscito:", response.data);
-    return response.data;
+
+    const jobId = response.data.job_id;
+    const imageUrl = response.data.input_image; 
+    if (!imageUrl) {
+      console.warn("⚠️ input_image non presente nella risposta!");
+    }
+
+    return { jobId, imageUrl };
 
   } catch (error: any) {
     console.error("❌ Upload fallito");
@@ -53,4 +58,3 @@ export const uploadImage = async (formData: FormData) => {
     throw error;
   }
 };
-

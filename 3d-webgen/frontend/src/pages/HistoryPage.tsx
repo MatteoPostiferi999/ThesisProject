@@ -14,7 +14,7 @@ const HistoryPage = () => {
     const token = localStorage.getItem("authToken");
     if (!token) return;
 
-    getUserModels(token)
+    getUserModels()
       .then((data) => setModels(data))
       .catch(() => toast.error("Failed to load models"))
       .finally(() => setLoading(false));

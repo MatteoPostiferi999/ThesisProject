@@ -7,10 +7,8 @@ import ImagePreview from "./upload/ImagePreview";
 import Generate3DButton from "@/components/generate3DButton";
 import axios from "axios";
 import ProcessingStatus from "@/components/ProcessingStatus";
-import { getJobStatus } from "@/services/api/jobService"; 
-import { uploadImage } from "@/services/api/jobService";
+import { getJobStatus, uploadImage } from "@/services/api/jobService";
 import { Link } from "react-router-dom";
-
 
 
 type StatusType = 'idle' | 'uploading' | 'processing' | 'completed' | 'error';
@@ -38,15 +36,16 @@ const ImageUploader = ({
   const [progress, setProgress] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null); 
 
 
 
-const pollJobStatus = (jobId: number) => {
+  const pollJobStatus = (jobId: number, imageUrl: string) => {
   setStatus("processing");
 
   const interval = setInterval(async () => {
     try {
-      const data = await getJobStatus(jobId); 
+      const data = await getJobStatus(jobId);
       const jobStatus = data.status;
       const jobProgress = data.progress ?? 0;
 
@@ -67,16 +66,24 @@ const pollJobStatus = (jobId: number) => {
         toast.success("3D model ready!");
 
         const token = localStorage.getItem("authToken");
-        if (!token || !uploadedImage || !selectedModel) {
+        console.log("🧪 Token:", token);
+        console.log("🧪 imageUrl:", imageUrl);
+        console.log("🧪 selectedModel:", selectedModel);
+   
+        if (!token || !imageUrl || !selectedModel) {
           toast.error("Missing info for saving model.");
           return;
         }
 
+        console.log("✅ uploadedImage:", imageUrl);
+        console.log("✅ selectedModel:", selectedModel);
+        console.log("✅ token:", token);
+
         try {
-          await axios.post(
+          const saveResponse = await axios.post(
             "/api/generated-models/save/",
             {
-              input_image: uploadedImage,
+              input_image: imageUrl,
               output_model: data.mesh_url,
               model_name: selectedModel,
             },
@@ -86,8 +93,17 @@ const pollJobStatus = (jobId: number) => {
               },
             }
           );
-          toast.success("Model saved to your history!");
-          console.log("✅ Model saved to history");
+
+          console.log("✅ Response from save:", saveResponse.data);
+
+          if (saveResponse.status === 201 || saveResponse.status === 200) {
+            toast.success("Model saved to your history!");
+            console.log("✅ Model saved to history");
+          } else {
+            toast.warning("Model generated but not saved.");
+            console.warn("⚠️ Save response not OK:", saveResponse.status);
+          }
+
         } catch (saveErr) {
           console.error("❌ Failed to save model:", saveErr);
           toast.error("Could not save model to history.");
@@ -111,33 +127,34 @@ const pollJobStatus = (jobId: number) => {
   }, 1000);
 };
 
+  const handleGenerate3D = async () => {
+    if (!uploadedImage) {
+      toast.error("Please upload an image first.");
+      return;
+    }
 
+    setStatus("uploading");
+    setHasStartedGeneration(true);
 
-const handleGenerate3D = async () => {
-  if (!uploadedImage) {
-    toast.error("Please upload an image first.");
-    return;
-  }
+    try {
+      const response = await fetch(uploadedImage);
+      const blob = await response.blob();
+      const file = new File([blob], "image.jpg", { type: blob.type });
 
-  setStatus("uploading");
-  setHasStartedGeneration(true);
+      const formData = new FormData();
+      formData.append("image", file);
 
-  try {
-    const response = await fetch(uploadedImage);
-    const blob = await response.blob();
-    const file = new File([blob], "image.jpg", { type: blob.type });
+      const uploadResponse = await uploadImage(formData);
 
-    const formData = new FormData();
-    formData.append("image", file);
+      setImageUrl(uploadResponse.imageUrl); 
+      pollJobStatus(uploadResponse.jobId, uploadResponse.imageUrl);
 
-    const uploadResponse = await uploadImage(formData); 
-    pollJobStatus(uploadResponse.job_id);              
-  } catch (err) {
-    console.error("Upload failed:", err);
-    toast.error("Failed to upload image.");
-    setStatus("error");
-  }
-};
+    } catch (err) {
+      console.error("Upload failed:", err);
+      toast.error("Failed to upload image.");
+      setStatus("error");
+    }
+  };
 
   const { error, isDragging, setIsDragging, handleFileDrop } = useImageUpload({
     onImageUploaded: (imageDataUrl) => {
@@ -170,48 +187,39 @@ const handleGenerate3D = async () => {
       </p>
 
       {uploadedImage ? (
-  <div className="space-y-4">
-    <ImagePreview 
-      imageSrc={uploadedImage}
-      selectedModel={selectedModel}
-      onReplaceClick={handleReplaceClick}
-      onDeleteClick={handleDeleteImage}
-    />
+        <div className="space-y-4">
+          <ImagePreview 
+            imageSrc={uploadedImage}
+            selectedModel={selectedModel}
+            onReplaceClick={handleReplaceClick}
+            onDeleteClick={handleDeleteImage}
+          />
 
-    {/* <ProcessingStatus
-      hasStartedGeneration={hasStartedGeneration}
-      progress={progress}
-    />
-    */}
-
-    <Generate3DButton
-      status={status}
-      progress={progress}
-      hasModel={status === "completed"}
-      onGenerate={handleGenerate3D}
-      onRetry={handleGenerate3D}
-      disabled={status === "uploading" || status === "processing"}
-    />
-  </div>
-) : (
-  <>
-    <UploadDropzone
-      onDrop={handleFileDrop}
-      isDragging={isDragging}
-      setIsDragging={setIsDragging}
-      error={error}
-    />
-    <Link
-      to="/history"
-      className="mt-6 inline-block bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 text-sm"
-    >
-      View My History
-    </Link>
-  </>
-)
-
-}
-
+          <Generate3DButton
+            status={status}
+            progress={progress}
+            hasModel={status === "completed"}
+            onGenerate={handleGenerate3D}
+            onRetry={handleGenerate3D}
+            disabled={status === "uploading" || status === "processing"}
+          />
+        </div>
+      ) : (
+        <>
+          <UploadDropzone
+            onDrop={handleFileDrop}
+            isDragging={isDragging}
+            setIsDragging={setIsDragging}
+            error={error}
+          />
+          <Link
+            to="/history"
+            className="mt-6 inline-block bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 text-sm"
+          >
+            View My History
+          </Link>
+        </>
+      )}
     </div>
   );
 };

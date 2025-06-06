@@ -15,37 +15,39 @@ from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny
 
 
-
-
-
 class UploadImageView(APIView):
-    permission_classes = [AllowAny]  # Permette a chiunque di caricare immagini
+    permission_classes = [IsAuthenticated] 
 
     def post(self, request):
         image = request.FILES.get('image')
         if not image:
             return Response({'error': 'No image uploaded'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Crea job vuoto
+        # Crea il job iniziale
         job = Job.objects.create(status='PENDING')
 
-        # Crea filename unico
+        # Salva immagine
         filename = f"{job.id}_{slugify(image.name)}"
         relative_path = f"jobs/{filename}"
+        saved_path = default_storage.save(relative_path, image)
 
-        # Salva immagine
-        path = default_storage.save(relative_path, image)
-
-        # Salva percorso nel Job (se hai image=ImageField)
-        job.image.name = path  # salva path relativo a MEDIA_ROOT
+        # Salva path nel job
+        job.image.name = saved_path
         job.save()
 
-        # Avvia il task Celery
-    
-        full_path = os.path.join(settings.MEDIA_ROOT, path)
+        # Avvia task Celery
+        full_path = os.path.join(settings.MEDIA_ROOT, saved_path)
         process_image.delay(job.id, full_path)
 
-        return Response({'job_id': job.id, 'status': 'PENDING'}, status=status.HTTP_201_CREATED)
+        # 🔁 Restituisci anche l’URL assoluto
+        image_url = request.build_absolute_uri(job.image.url)
+
+        return Response({
+            'job_id': job.id,
+            'status': job.status,
+            'input_image': image_url  #  questo campo viene usato dal frontend
+        }, status=status.HTTP_201_CREATED)
+
 
 
 
