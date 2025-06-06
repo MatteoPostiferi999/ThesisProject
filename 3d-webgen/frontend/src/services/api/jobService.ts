@@ -6,8 +6,18 @@ export const getJobStatus = async (jobId: string | number) => {
 };
 
 export const uploadImage = async (formData: FormData) => {
+  const token = localStorage.getItem("authToken");
+
+  if (!token) {
+    throw new Error("No authentication token found");
+  }
+
   const response = await axios.post("/api/upload/", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
   });
+
   return response.data;
 };

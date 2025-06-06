@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Job, GeneratedModel
+from .models import Job
 
 class JobSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,9 +8,3 @@ class JobSerializer(serializers.ModelSerializer):
         read_only_fields = ['status', 'result_file', 'error_message', 'created_at', 'updated_at']
 
 
-
-class GeneratedModelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GeneratedModel
-        fields = '__all__'
-        read_only_fields = ['user', 'created_at']

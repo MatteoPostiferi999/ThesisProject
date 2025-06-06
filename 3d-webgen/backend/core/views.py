@@ -2,18 +2,22 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework.generics import RetrieveAPIView
-from .serializers import JobSerializer, GeneratedModelSerializer
-from .models import Job, GeneratedModel
+from .serializers import JobSerializer
+from .models import Job
 from django.core.files.storage import default_storage
 from django.conf import settings
 import os
 from jobs.tasks import process_image  
 from django.utils.text import slugify
 from uuid import uuid4
+from rest_framework.permissions import IsAuthenticated
+
 
 
 
 class UploadImageView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         image = request.FILES.get('image')
         if not image:
@@ -94,13 +98,3 @@ class GenerateJobView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-class GeneratedModelViewSet(viewsets.ModelViewSet):
-    serializer_class = GeneratedModelSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return GeneratedModel.objects.filter(user=self.request.user).order_by('-created_at')
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)

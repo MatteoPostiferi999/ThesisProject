@@ -22,10 +22,13 @@ const LoginForm = () => {
 
   try {
     const data = await loginUser(credentials); // <-- chiamata pulita
-    const token = data.token;
+    const accessToken = data.access;
+    const refreshToken = data.refresh;
 
     // Salva il token nel localStorage per sessione utente
-    localStorage.setItem("authToken", token);
+    localStorage.setItem("authToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    
     toast.success("Login successful!");
     console.log("Logged in user:", data);
     navigate("/home");

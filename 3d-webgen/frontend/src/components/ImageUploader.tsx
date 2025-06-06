@@ -40,50 +40,83 @@ const ImageUploader = ({
   const [hasStartedGeneration, setHasStartedGeneration] = useState(false);
 
 
+
 const pollJobStatus = (jobId: number) => {
   setStatus("processing");
 
-const interval = setInterval(async () => {
-  try {
-    const data = await getJobStatus(jobId); 
-    const jobStatus = data.status;
-    const jobProgress = data.progress ?? 0;
+  const interval = setInterval(async () => {
+    try {
+      const data = await getJobStatus(jobId); 
+      const jobStatus = data.status;
+      const jobProgress = data.progress ?? 0;
 
-    console.log("[POLL] Job status:", jobStatus);
-    console.log("[POLL] Full response:", data);
+      console.log("[POLL] Job status:", jobStatus);
+      console.log("[POLL] Full response:", data);
 
-    if (jobStatus === "COMPLETED") {
-      clearInterval(interval);
+      if (jobStatus === "COMPLETED") {
+        clearInterval(interval);
 
-      console.log("[POLL] Job completed ✅");
-      console.log("[POLL] mesh_url:", data.mesh_url);
+        console.log("[POLL] Job completed ✅");
+        console.log("[POLL] mesh_url:", data.mesh_url);
 
-      if (data.mesh_url) {
-        setModelUrl(data.mesh_url);
-        setStatus("completed");
-        toast.success("3D model ready!");
-      } else {
+        if (data.mesh_url) {
+          setModelUrl(data.mesh_url);
+          setStatus("completed");
+          toast.success("3D model ready!");
+
+          // 🟨 Salvataggio nel backend
+          const token = localStorage.getItem("authToken");
+          console.log("Token usato per salvataggio modello:", token);
+          if (!token) {
+            toast.error("User not authenticated");
+            return;
+          }
+
+          try {
+            await axios.post(
+              "/api/generated-models/save/",
+              {
+                input_image: uploadedImage,
+                output_model: data.mesh_url,
+                model_name: selectedModel, 
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  
+                },
+              }
+            );
+            toast.success("Model saved to your history!");
+            console.log("✅ Model saved to history");
+          } catch (saveErr) {
+            console.error("❌ Failed to save model:", saveErr);
+            toast.error("Could not save model to history.");
+          }
+
+        } else {
+          setStatus("error");
+          toast.error("Mesh URL missing from response.");
+        }
+
+      } else if (jobStatus === "FAILED") {
+        clearInterval(interval);
         setStatus("error");
-        toast.error("Mesh URL missing from response.");
+        toast.error("Failed to generate 3D model.");
+      } else {
+        setProgress(jobProgress);
+        console.log("[POLL] Progress:", jobProgress);
       }
 
-    } else if (jobStatus === "FAILED") {
+    } catch (err) {
       clearInterval(interval);
       setStatus("error");
-      toast.error("Failed to generate 3D model.");
-    } else {
-      setProgress(jobProgress);
-      console.log("[POLL] Progress:", jobProgress);
+      console.error("[POLL] Error during status check:", err);
+      toast.error("Error checking job status.");
     }
-
-  } catch (err) {
-    clearInterval(interval);
-    setStatus("error");
-    console.error("[POLL] Error during status check:", err);
-    toast.error("Error checking job status.");
-  }
-}, 1000);
+  }, 1000);
 };
+
 
 
 const handleGenerate3D = async () => {

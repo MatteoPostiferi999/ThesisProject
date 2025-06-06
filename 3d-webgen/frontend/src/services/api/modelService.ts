@@ -5,7 +5,7 @@ import { GeneratedModel } from "@/types/models"; // definiscilo sotto se non c'√
 export const getUserModels = async (token: string): Promise<GeneratedModel[]> => {
   const response = await axios.get("/api/models/", {
     headers: {
-      Authorization: `Token ${token}`,
+      Authorization: `Bearer ${token}`, // ‚Üê qui
     },
   });
   return response.data;

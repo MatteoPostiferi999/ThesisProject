@@ -24,6 +24,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('api/', include('core.urls')),
     path('api/users/', include('users.urls')),
+    path('api/generated-models/', include('models_history.urls')),
+
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
