@@ -1,24 +1,35 @@
 import { useEffect, useState } from "react";
-import { getUserModels } from "@/services/api/modelService";
+import { getUserModels, deleteModel } from "@/services/api/modelService";
 import { GeneratedModel } from "@/types/models";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-// import '@google/model-viewer'; // ← scommenta se usi <model-viewer>
+import { Trash2 } from "lucide-react";
 
 const HistoryPage = () => {
   const [models, setModels] = useState<GeneratedModel[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (!token) return;
-
+  const fetchModels = () => {
     getUserModels()
       .then((data) => setModels(data))
       .catch(() => toast.error("Failed to load models"))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchModels();
   }, []);
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteModel(id);
+      toast.success("Model deleted successfully");
+      setModels((prev) => prev.filter((m) => m.id !== id));
+    } catch (error) {
+      toast.error("Failed to delete model");
+    }
+  };
 
   return (
     <section className="p-6 max-w-6xl mx-auto">
@@ -40,8 +51,17 @@ const HistoryPage = () => {
           {models.map((model) => (
             <Card
               key={model.id}
-              className="p-4 space-y-3 transition transform hover:-translate-y-1 hover:shadow-lg"
+              className="relative p-4 space-y-3 transition transform hover:-translate-y-1 hover:shadow-lg"
             >
+              {/* Pulsante delete */}
+              <button
+                onClick={() => handleDelete(model.id)}
+                className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                title="Delete model"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+
               <img
                 src={model.input_image}
                 alt="Input"
@@ -53,14 +73,14 @@ const HistoryPage = () => {
                   {model.model_name}
                 </span>
                 <span>
-                  {new Date(model.created_at).toLocaleDateString()} -{" "}
+                  {new Date(model.created_at).toLocaleDateString()}{" "}
                   {new Date(model.created_at).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
                 </span>
               </div>
-
+              
               {/* Viewer 3D opzionale */}
               {/* <model-viewer
                 src={model.output_model}
@@ -69,7 +89,6 @@ const HistoryPage = () => {
                 auto-rotate
                 class="w-full h-[300px] rounded border"
               /> */}
-
               <a
                 href={model.output_model}
                 target="_blank"
