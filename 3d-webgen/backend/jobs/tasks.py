@@ -26,7 +26,11 @@ def process_image(job_id, input_path):
         job = Job.objects.get(id=job_id)
 
         # Simula elaborazione
-        time.sleep(2)  # tempo fittizio
+        print("GENERO MESH: START")
+
+        time.sleep(30)  # tempo fittizio
+        print("GENERO MESH: DONE")
+
 
         # Simula risultato copiando una mesh finta
         fake_output_path = os.path.join(settings.MEDIA_ROOT, 'PROVA.obj')

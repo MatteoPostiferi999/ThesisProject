@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ const ImagePreview = ({
   imageSrc,
   selectedModel,
   onReplaceClick,
-  onDeleteClick
+  onDeleteClick,
 }: ImagePreviewProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,32 +36,35 @@ const ImagePreview = ({
               Image uploaded successfully
             </p>
           </div>
-          
-          <div className={`relative aspect-video w-full max-w-md mx-auto overflow-hidden rounded-lg transition-opacity duration-300 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}>
-            <img 
-              src={imageSrc} 
-              alt="Uploaded preview" 
-              className="object-cover w-full h-full"
+
+          <div
+            className={`relative w-full max-w-2xl mx-auto rounded-lg transition-opacity duration-300 ${
+              imageLoaded ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ height: "360px", backgroundColor: "#fff" }}
+          >
+            <img
+              src={imageSrc}
+              alt="Uploaded preview"
+              className="object-contain w-full h-full rounded-lg border"
             />
-            
+
             <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-3 py-1 rounded-full">
               {getModelName(selectedModel)}
             </div>
           </div>
-          
+
           <div className="mt-6 flex justify-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="text-sm flex items-center gap-2"
               onClick={onReplaceClick}
             >
               <RefreshCw className="h-4 w-4" />
               Replace image
             </Button>
-            <Button 
+            <Button
               variant="outline"
               size="sm"
               className="text-sm flex items-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-300"

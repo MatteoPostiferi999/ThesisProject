@@ -63,43 +63,43 @@ const HistoryPage = () => {
           ← Back to Home
         </Link>
       </div>
+{/* Filters */}
+<div className="flex flex-col md:flex-row gap-4 mb-6">
+  <div className="w-52">
+    <label className="text-sm font-medium mb-1 flex items-center gap-2">
+      <Filter className="w-4 h-4" />
+      Filter by model
+    </label>
+    <Select value={selectedModel} onValueChange={setSelectedModel}>
+      <SelectTrigger>
+        <SelectValue placeholder="Select a model" />
+      </SelectTrigger>
+      <SelectContent>
+        {modelOptions.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <label className="text-sm font-medium mb-1 flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            Filter by model
-          </label>
-          <Select value={selectedModel} onValueChange={setSelectedModel}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a model" />
-            </SelectTrigger>
-            <SelectContent>
-              {modelOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-52">
-          <label className="text-sm font-medium mb-1 flex items-center gap-2">
-            <SortDesc className="w-4 h-4" />
-            Sort by date
-          </label>
-          <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger>
-              <SelectValue placeholder="Sort order" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="desc">Newest first</SelectItem>
-              <SelectItem value="asc">Oldest first</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+  <div className="w-52">
+    <label className="text-sm font-medium mb-1 flex items-center gap-2">
+      <SortDesc className="w-4 h-4" />
+      Sort by date
+    </label>
+    <Select value={sortOrder} onValueChange={setSortOrder}>
+      <SelectTrigger>
+        <SelectValue placeholder="Sort order" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="desc">Newest first</SelectItem>
+        <SelectItem value="asc">Oldest first</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+</div>
 
       {/* Content */}
       {loading ? (

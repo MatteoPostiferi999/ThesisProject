@@ -185,49 +185,53 @@ const ImageUploader = ({
     fileInputRef.current?.click();
   };
 
-  return (
-    <div id="uploader-section" className="mb-8">
-      <h2 className="text-2xl font-semibold mb-4">Upload Your Image</h2>
-      <p className="text-sm text-muted-foreground mb-4">
-        Selected model: <span className="font-medium text-foreground">{getModelName(selectedModel)}</span>
-      </p>
+return (
+  <div id="uploader-section" className="mb-8">
+    <h2 className="text-2xl font-semibold mb-4">Upload Your Image</h2>
+    <p className="text-sm text-muted-foreground mb-4">
+      Selected model:{" "}
+      <span className="font-medium text-foreground">
+        {getModelName(selectedModel)}
+      </span>
+    </p>
 
-      {uploadedImage ? (
-        <div className="space-y-4">
-          <ImagePreview 
-            imageSrc={uploadedImage}
-            selectedModel={selectedModel}
-            onReplaceClick={handleReplaceClick}
-            onDeleteClick={handleDeleteImage}
-          />
+    {uploadedImage ? (
+      <div className="space-y-4">
+        <ImagePreview 
+          imageSrc={uploadedImage}
+          selectedModel={selectedModel}
+          onReplaceClick={handleReplaceClick}
+          onDeleteClick={handleDeleteImage}
+        />
 
-          <Generate3DButton
-            status={status}
-            progress={progress}
-            hasModel={status === "completed"}
-            onGenerate={handleGenerate3D}
-            onRetry={handleGenerate3D}
-            disabled={status === "uploading" || status === "processing"}
-          />
-        </div>
-      ) : (
-        <>
-          <UploadDropzone
-            onDrop={handleFileDrop}
-            isDragging={isDragging}
-            setIsDragging={setIsDragging}
-            error={error}
-          />
-          <Link
-            to="/history"
-            className="mt-6 inline-block bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 text-sm"
-          >
-            View My History
-          </Link>
-        </>
-      )}
+        <Generate3DButton
+          status={status}
+          progress={progress}
+          hasModel={status === "completed"}
+          onGenerate={handleGenerate3D}
+          onRetry={handleGenerate3D}
+          disabled={status === "uploading" || status === "processing"}
+        />
+      </div>
+    ) : (
+      <UploadDropzone
+        onDrop={handleFileDrop}
+        isDragging={isDragging}
+        setIsDragging={setIsDragging}
+        error={error}
+      />
+    )}
+
+    {/* Sempre visibile */}
+    <div className="mt-8 flex justify-center">
+      <Link
+        to="/history"
+        className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-base font-medium transition-all shadow-md"
+      >
+        📁 View My History
+      </Link>
     </div>
-  );
-};
+  </div>
+);};
 
 export default ImageUploader;
