@@ -2,8 +2,10 @@
 import axios from "axios";
 import { GeneratedModel } from "@/types/models"; 
 
-
-export const getUserModels = async (): Promise<GeneratedModel[]> => {
+export const getUserModels = async (params?: {
+  model_name?: string;
+  order?: string;
+}): Promise<GeneratedModel[]> => {
   const token = localStorage.getItem("authToken");
 
   if (!token) {
@@ -14,10 +16,12 @@ export const getUserModels = async (): Promise<GeneratedModel[]> => {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    params, 
   });
 
   return response.data;
 };
+
 
 export const deleteModel = async (id: number) => {
   const token = localStorage.getItem("authToken");

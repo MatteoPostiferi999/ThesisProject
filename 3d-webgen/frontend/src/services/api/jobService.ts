@@ -8,7 +8,8 @@ export const getJobStatus = async (jobId: number) => {
     throw new Error("User not authenticated");
   }
 
-  const response = await axios.get(`/api/jobs/status/${jobId}/`, {
+
+  const response = await axios.get(`/api/jobs/${jobId}/status/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -33,7 +34,7 @@ export const uploadImage = async (formData: FormData) => {
       console.log(`📤 FormData: ${pair[0]} =`, pair[1]);
     }
 
-    const response = await axios.post("/api/upload/", formData, {
+    const response = await axios.post("/api/jobs/upload/", formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",

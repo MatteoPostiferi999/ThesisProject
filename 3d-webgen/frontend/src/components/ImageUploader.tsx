@@ -66,18 +66,25 @@ const ImageUploader = ({
         toast.success("3D model ready!");
 
         const token = localStorage.getItem("authToken");
+
         console.log("🧪 Token:", token);
         console.log("🧪 imageUrl:", imageUrl);
+        console.log("🧪 mesh_url:", data.mesh_url);
         console.log("🧪 selectedModel:", selectedModel);
-   
-        if (!token || !imageUrl || !selectedModel) {
-          toast.error("Missing info for saving model.");
+
+        // 🔒 Controlli di sicurezza
+        if (!token || !imageUrl || !selectedModel || typeof selectedModel !== "string") {
+          toast.error("Missing or invalid info for saving model.");
           return;
         }
 
-        console.log("✅ uploadedImage:", imageUrl);
-        console.log("✅ selectedModel:", selectedModel);
-        console.log("✅ token:", token);
+        console.log("📦 Dati inviati a /save:", {
+          input_image: imageUrl,
+          output_model: data.mesh_url,
+          model_name: selectedModel,
+        });
+
+        console.log("📡 Salvataggio: token in header?", token);
 
         try {
           const saveResponse = await axios.post(
@@ -98,12 +105,10 @@ const ImageUploader = ({
 
           if (saveResponse.status === 201 || saveResponse.status === 200) {
             toast.success("Model saved to your history!");
-            console.log("✅ Model saved to history");
           } else {
             toast.warning("Model generated but not saved.");
             console.warn("⚠️ Save response not OK:", saveResponse.status);
           }
-
         } catch (saveErr) {
           console.error("❌ Failed to save model:", saveErr);
           toast.error("Could not save model to history.");
@@ -126,6 +131,7 @@ const ImageUploader = ({
     }
   }, 1000);
 };
+
 
   const handleGenerate3D = async () => {
     if (!uploadedImage) {

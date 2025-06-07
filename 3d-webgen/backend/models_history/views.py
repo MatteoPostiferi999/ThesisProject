@@ -12,11 +12,24 @@ class GeneratedModelViewSet(viewsets.ModelViewSet):
     serializer_class = GeneratedModelSerializer
     permission_classes = [IsAuthenticated]
 
+    VALID_MODELS = [
+        'hunyuan-mini-turbo',
+        'hunyuan-mini-fast',
+        'hunyuan-mini',
+        'hunyuan-mv-turbo',
+        'hunyuan-mv-fast',
+        'hunyuan-mv',
+        'hunyuan-v2-0-turbo',
+        'hunyuan-v2-0-fast',
+        'hunyuan-v2-0',
+    ]
+
+
     def get_queryset(self):
         """
         Restituisce solo i modelli generati dall'utente autenticato.
         """
-        return GeneratedModel.objects.filter(user=self.request.user).order_by('-created_at')
+        return GeneratedModel.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         """
@@ -24,15 +37,7 @@ class GeneratedModelViewSet(viewsets.ModelViewSet):
         """
         serializer.save(user=self.request.user)
 
-    @action(detail=False, methods=['get'], url_path='my-models')
-    def my_models(self, request):
-        """
-        Restituisce la cronologia dei modelli generati dall'utente.
-        """
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
+    
     @action(detail=False, methods=['post'], url_path='save')
     def save_model(self, request):
         """
@@ -45,3 +50,29 @@ class GeneratedModelViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         print("❌ Validation errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    @action(detail=False, methods=['get'], url_path='my-models')
+    def my_models(self, request):
+        queryset = self.get_queryset()
+
+        model_name = request.query_params.get('model_name', 'all')
+        if model_name != 'all' and model_name in self.VALID_MODELS:
+            queryset = queryset.filter(model_name=model_name)
+
+
+        # Filtro per modello AI – default: hunyuan-mini-turbo
+        model_name = request.query_params.get('model_name', 'hunyuan-mini-turbo')
+        if model_name in self.VALID_MODELS:
+            queryset = queryset.filter(model_name=model_name)
+
+        # Ordinamento – default: desc
+        order = request.query_params.get('order', 'desc')
+        if order == 'asc':
+            queryset = queryset.order_by('created_at')
+        else:
+            queryset = queryset.order_by('-created_at')
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
