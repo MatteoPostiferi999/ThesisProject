@@ -22,27 +22,35 @@ class JobViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'], url_path='upload')
     def upload_image(self, request):
-        image = request.FILES.get('image')
-        if not image:
-            return Response({'error': 'No image uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+            image = request.FILES.get('image')
+            if not image:
+                return Response({'error': 'No image uploaded'}, status=status.HTTP_400_BAD_REQUEST)
 
-        job = Job.objects.create(status='PENDING')
-        filename = f"{job.id}_{slugify(image.name)}"
-        relative_path = f"jobs/{filename}"
-        saved_path = default_storage.save(relative_path, image)
+            # 1. Crea Job
+            job = Job.objects.create(status='PENDING')
 
-        job.image.name = saved_path
-        job.save()
+            # 2. Salva immagine nel percorso corretto
+            filename = f"{job.id}_{slugify(image.name)}"
+            relative_path = f"jobs/{filename}"
+            saved_path = default_storage.save(relative_path, image)
 
-        full_path = os.path.join(settings.MEDIA_ROOT, saved_path)
-        process_image.delay(job.id, full_path)
+            # 3. Salva il path nel Job
+            job.image.name = saved_path
+            job.save()
 
-        image_url = request.build_absolute_uri(job.image.url)
-        return Response({
-            'job_id': job.id,
-            'status': job.status,
-            'input_image': image_url
-        }, status=status.HTTP_201_CREATED)
+            # 4. Avvia generazione mesh vera
+            model_id = request.data.get('model_id', '4')
+            preprocess = request.data.get('preprocess', True)
+            generate_mesh_task.delay(job.id, model_id, preprocess)
+
+            # 5. Risposta
+            image_url = request.build_absolute_uri(job.image.url)
+            return Response({
+                'job_id': job.id,
+                'status': job.status,
+                'input_image': image_url
+            }, status=status.HTTP_201_CREATED)
+
 
     def retrieve(self, request, pk=None):
         try:

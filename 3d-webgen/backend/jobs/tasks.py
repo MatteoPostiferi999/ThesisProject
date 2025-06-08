@@ -8,6 +8,7 @@ from datetime import datetime
 from django.conf import settings
 import os
 import time
+import logging
 
 # Celery task to generate mesh using Docker
 # This task is triggered when a new job is created and runs in the background.
@@ -16,7 +17,6 @@ import time
 # The task takes the job ID, model ID, and a preprocess flag as arguments.
 # The model ID specifies which model to use for mesh generation, and the preprocess flag indicates whether to apply preprocessing steps.
 
-# backend/jobs/tasks.py
 
 
 
@@ -50,45 +50,43 @@ def process_image(job_id, input_path):
         job.save()
 
 
+
 @shared_task
 def generate_mesh_task(job_id, model_id="4", preprocess=False):
     try:
+        logging.info(f"🚀 Avvio generazione mesh per job {job_id} con modello {model_id}")
+
         job = Job.objects.get(id=job_id)
         job.status = "IN_PROGRESS"
         job.save()
 
         if not job.image:
-           raise ValueError("No input image provided for this job.")
+            raise ValueError("No input image provided.")
 
-        input_path = job.image.path
+        input_path = job.image.path 
 
+        # Output file
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"mesh_{job_id}_{timestamp}.ply"
-        output_dir = os.path.join(settings.MEDIA_ROOT, "generated_meshes")
+        output_dir = os.path.join(settings.MEDIA_ROOT, "results")
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, filename)
+        script_path = "/Users/matteopostiferi/VsCodeProjects/Thesis_Project/3d-webgen/ai/meshGen.py"
 
-
-        # Monta le cartelle corrette nel container
-        # XXX DA CREARE L'IMMAGINE HUNYUAN-GPU XXX
+        # Comando per lanciare meshGen.py
         cmd = [
-            "docker", "run", "--rm", "--gpus", "all",
-            "-v", f"{settings.MEDIA_ROOT}/input_images:/input",
-            "-v", f"{settings.MEDIA_ROOT}/generated_meshes:/output",
-            "matteopostiferi/hunyuan-gpu",
+            "python3",
+            script_path, "ai", "meshGen.py",
             "--model-id", str(model_id),
-            "--image-path", f"/input/{os.path.basename(input_path)}",
-            "--output-path", f"/output/{filename}",
+            "--image-path", input_path,
+            "--output-path", output_path
         ]
-
-
         if preprocess:
             cmd.append("--preprocess")
 
         subprocess.run(cmd, check=True)
 
-        # Salva il risultato
-        job.result_file.name = f"generated_meshes/{filename}"
+        job.result_file.name = f"results/{filename}"
         job.status = "COMPLETED"
         job.save()
 

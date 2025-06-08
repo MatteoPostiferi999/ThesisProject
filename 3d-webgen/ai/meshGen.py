@@ -103,8 +103,7 @@ if __name__ == "__main__":
             octree_resolution=args.octree_resolution
         )[0]
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = f"output/output_{timestamp}.ply"
-    os.makedirs("output", exist_ok=True)
-    mesh.export(output_path)
-    logging.info(f"✅ Mesh salvata in: {output_path}")
+
+output_path = args.output_path or f"output/output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ply"
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+mesh.export(output_path)
