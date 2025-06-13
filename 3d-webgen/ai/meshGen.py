@@ -103,7 +103,9 @@ if __name__ == "__main__":
             octree_resolution=args.octree_resolution
         )[0]
 
-
-output_path = args.output_path or f"output/output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ply"
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
-mesh.export(output_path)
+    # Save mesh in fixed directory
+    base_dir = "/home/ubuntu/ThesisProject/3d-webgen/backend/media/results"
+    os.makedirs(base_dir, exist_ok=True)
+    output_path = os.path.join(base_dir, f"mesh_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ply")
+    mesh.export(output_path)
+    print(f"✅ Mesh salvata in: {output_path}")

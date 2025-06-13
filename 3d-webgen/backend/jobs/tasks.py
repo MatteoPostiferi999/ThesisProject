@@ -79,7 +79,6 @@ def generate_mesh_task(job_id, model_id="4", preprocess=False):
             script_path, "ai", "meshGen.py",
             "--model-id", str(model_id),
             "--image-path", input_path,
-            "--output-path", output_path
         ]
         if preprocess:
             cmd.append("--preprocess")
