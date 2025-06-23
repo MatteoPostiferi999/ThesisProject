@@ -9,6 +9,17 @@ from django.conf import settings
 import os
 import time
 import logging
+import tempfile
+import requests
+
+from celery import shared_task
+from django.conf import settings
+from django.core.files import File
+
+from core.models import Job
+
+logger = logging.getLogger(__name__)
+
 
 # Celery task to generate mesh using Docker
 # This task is triggered when a new job is created and runs in the background.
@@ -54,42 +65,67 @@ def process_image(job_id, input_path):
 @shared_task
 def generate_mesh_task(job_id, model_id="4", preprocess=False):
     try:
-        logging.info(f"🚀 Avvio generazione mesh per job {job_id} con modello {model_id}")
+        logger.info(f"🚀 Avvio generazione mesh per job {job_id} (model {model_id})")
 
-        job = Job.objects.get(id=job_id)
+        # 1) Marca il job come in progress
+        job = Job.objects.get(pk=job_id)
         job.status = "IN_PROGRESS"
-        job.save()
+        job.save(update_fields=["status"])
 
-        if not job.image:
-            raise ValueError("No input image provided.")
+        # 2) Scarica l'immagine dal bucket Supabase
+        img_url = job.image.url
+        resp = requests.get(img_url, stream=True)
+        if resp.status_code != 200:
+            raise RuntimeError(f"Impossibile scaricare l'immagine ({resp.status_code})")
 
-        input_path = job.image.path 
+        # 3) Salva l'immagine in un file temporaneo
+        ext = os.path.splitext(img_url)[1] or ".png"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            for chunk in resp.iter_content(chunk_size=8192):
+                tmp.write(chunk)
+            input_path = tmp.name
 
-        # Output file
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"mesh_{job_id}_{timestamp}.ply"
+        # 4) Prepara la directory di output
         output_dir = os.path.join(settings.MEDIA_ROOT, "results")
         os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, filename)
-        script_path = "/Users/matteopostiferi/VsCodeProjects/Thesis_Project/3d-webgen/ai/meshGen.py"
 
-        # Comando per lanciare meshGen.py
+        # 5) Esegui meshGen.py
+        script_path = "/home/ubuntu/ThesisProject/3d-webgen/ai/meshGen.py"
         cmd = [
-            "python3",
-            script_path, "ai", "meshGen.py",
-            "--model-id", str(model_id),
+            "python3", script_path,
+            "--model-id", model_id,
             "--image-path", input_path,
+            "--output-dir", output_dir
         ]
         if preprocess:
             cmd.append("--preprocess")
-
+        logger.info("Running: %s", " ".join(cmd))
         subprocess.run(cmd, check=True)
 
-        job.result_file.name = f"results/{filename}"
+        # 6) Recupera l'ultimo file .ply generato
+        ply_files = sorted(f for f in os.listdir(output_dir) if f.endswith(".ply"))
+        latest_ply = ply_files[-1]
+        result_path = os.path.join(output_dir, latest_ply)
+
+        # 7) Salva il .ply via FileField (carica su Supabase)
+        with open(result_path, "rb") as f:
+            django_file = File(f)
+            job.result_file.save(f"results/{latest_ply}", django_file, save=False)
+
+        # 8) Aggiorna lo stato a COMPLETED
         job.status = "COMPLETED"
-        job.save()
+        job.save(update_fields=["result_file", "status"])
+        logger.info(f"✅ Job {job_id} completato: {latest_ply}")
 
     except Exception as e:
+        logger.exception(f"❌ Job {job_id} fallito")
+        # In caso di errore, marca il job come FAILED e memorizza il messaggio
         job.status = "FAILED"
         job.error_message = str(e)
-        job.save()
+        job.save(update_fields=["status", "error_message"])
+    finally:
+        # 9) Pulisci il file temporaneo
+        try:
+            os.remove(input_path)
+        except Exception:
+            pass

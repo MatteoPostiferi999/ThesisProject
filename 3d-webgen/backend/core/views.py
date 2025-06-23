@@ -1,105 +1,74 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
-from django.core.files.storage import default_storage
-from django.conf import settings
 from django.utils.text import slugify
-from .models import Job
+from django.core.files.base import ContentFile
 from .serializers import JobSerializer
-from jobs.tasks import process_image, generate_mesh_task
-import os
 
+from .models import Job
+from jobs.tasks import generate_mesh_task
 
-class JobViewSet(viewsets.ViewSet):
-    queryset = Job.objects.all()
-
-    def get_permissions(self):
-        if self.action in ['upload_image', 'status']:
-            return [IsAuthenticated()]
-        return []
+class JobViewSet(viewsets.ModelViewSet):
+    queryset           = Job.objects.all()
+    serializer_class   = JobSerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['post'], url_path='upload')
     def upload_image(self, request):
-            image = request.FILES.get('image')
-            if not image:
-                return Response({'error': 'No image uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+        image = request.FILES.get('image')
+        if not image:
+            return Response({'detail': 'No image uploaded'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # 1. Crea Job
-            job = Job.objects.create(status='PENDING')
+        job = Job.objects.create(status='PENDING')
 
-            # 2. Salva immagine nel percorso corretto
-            filename = f"{job.id}_{slugify(image.name)}"
-            relative_path = f"jobs/{filename}"
-            saved_path = default_storage.save(relative_path, image)
+        name, ext   = image.name.rsplit('.', 1)
+        safe_name   = slugify(name)
+        filename    = f"jobs/{job.id}/{safe_name}.{ext}"
 
-            # 3. Salva il path nel Job
-            job.image.name = saved_path
-            job.save()
+        job.image.save(filename, ContentFile(image.read()))
+        job.save(update_fields=['image'])
 
-            # 4. Avvia generazione mesh vera
-            model_id = request.data.get('model_id', '4')
-            preprocess = request.data.get('preprocess', True)
-            generate_mesh_task.delay(job.id, model_id, preprocess)
+        generate_mesh_task.delay(job.id)
 
-            # 5. Risposta
-            image_url = request.build_absolute_uri(job.image.url)
-            return Response({
-                'job_id': job.id,
-                'status': job.status,
-                'input_image': image_url
-            }, status=status.HTTP_201_CREATED)
-
+        return Response({
+            'job_id':           job.id,
+            'status':           job.status,
+            'input_image_url':  request.build_absolute_uri(job.image.url)
+        }, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request, pk=None):
-        try:
-            job = Job.objects.get(pk=pk)
-        except Job.DoesNotExist:
-            raise NotFound("Job not found")
-
-        if job.status == "COMPLETED" and job.result_file:
-            return Response({
-                "id": job.id,
-                "status": job.status,
-                "mesh_url": request.build_absolute_uri(job.result_file.url),
-                "created_at": job.created_at,
-                "updated_at": job.updated_at,
-            })
-        elif job.status == "FAILED":
-            return Response({
-                "id": job.id,
-                "status": job.status,
-                "error": job.error_message or "Errore non specificato.",
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            return Response({
-                "id": job.id,
-                "status": job.status,
-                "message": "La mesh non è ancora pronta. Riprova più tardi."
-            }, status=status.HTTP_202_ACCEPTED)
+        job        = self.get_object()
+        serializer = self.get_serializer(job, context={'request': request})
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'], url_path='status')
     def status(self, request, pk=None):
-        try:
-            job = Job.objects.get(pk=pk)
-        except Job.DoesNotExist:
-            raise NotFound("Job not found")
+        job        = self.get_object()
+        serializer = self.get_serializer(job, context={'request': request})
+        mesh_url   = serializer.data.get('result_file_url')
+        progress   = 100 if job.status == "COMPLETED" else 0
 
-        mesh_url = request.build_absolute_uri(job.result_file.url) if job.result_file else None
         return Response({
-            'status': job.status,
+            'status':   job.status,
             'mesh_url': mesh_url,
-            'progress': 100 if job.status == "COMPLETED" else 0
+            'progress': progress
         })
 
     @action(detail=False, methods=['post'], url_path='generate')
     def generate(self, request):
-        serializer = JobSerializer(data=request.data)
-        if serializer.is_valid():
-            job = serializer.save()
-            model_id = request.data.get('model_id', '4')
-            preprocess = request.data.get('preprocess', False)
-            generate_mesh_task.delay(job.id, model_id, preprocess)
-            return Response({"job_id": job.id, "status": job.status}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        job = serializer.save(status='PENDING')
+        model_id   = request.data.get('model_id', '4')
+        preprocess = request.data.get('preprocess', False)
+
+        generate_mesh_task.delay(job.id, model_id, preprocess)
+
+        data = serializer.data
+        data.update({
+            'job_id': job.id,
+            'status': job.status
+        })
+        return Response(data, status=status.HTTP_201_CREATED)

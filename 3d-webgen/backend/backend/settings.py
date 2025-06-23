@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,6 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'jobs',
     'models_history',
+    "storages"
 
  # Custom app for handling jobs
 ]
@@ -162,7 +165,23 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 
 
-import os
+# Storage su Supabase (S3-compatibile)
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+# → VALORI HARD-CODED per sviluppo LOCALE
+AWS_S3_ENDPOINT_URL      = "https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1"
+AWS_STORAGE_BUCKET_NAME  = "project-files"
+AWS_ACCESS_KEY_ID        = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MjYyODcsImV4cCI6MjA2NTMwMjI4N30.kxJxG8WQ-COxeUd4nlYC5D2pVVjTuD44k0MOAPXmrRc"
+AWS_SECRET_ACCESS_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTcyNjI4NywiZXhwIjoyMDY1MzAyMjg3fQ.P8mxN6g9qa_ug8kb8Azs4t_M14yYTaAaaHcdrdxxgVM"
+AWS_S3_REGION_NAME       = "auto"
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+
+# Se vuoi un prefisso comune in bucket, altrimenti lascialo vuoto
+AWS_LOCATION = ""
+
+# Dominio pubblico per gli oggetti
+AWS_S3_CUSTOM_DOMAIN = "https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/object/public"
+
 
 MEDIA_URL = '/media/'
 

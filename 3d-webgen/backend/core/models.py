@@ -10,7 +10,7 @@ class Job(models.Model):
         ("FAILED", "Failed"),
     ]
 
-    image = models.ImageField(upload_to='input_images/', null=True, blank=True)
+    image = models.ImageField(upload_to='input_images/')
     result_file = models.FileField(upload_to='results/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
     error_message = models.TextField(null=True, blank=True)

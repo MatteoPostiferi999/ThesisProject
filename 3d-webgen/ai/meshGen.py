@@ -7,7 +7,6 @@ from datetime import datetime
 from huggingface_hub import snapshot_download
 from hy3dgen.shapegen import Hunyuan3DDiTFlowMatchingPipeline
 import trimesh
-import sys
 import argparse
 
 logging.basicConfig(level=logging.INFO)
@@ -18,37 +17,29 @@ logging.info(f"🖥️ Usando device: {device}")
 def preprocess_image(img: Image.Image, name: str = "input_clean") -> Image.Image:
     img = remove(img)
     img = img.crop(img.getbbox())
-    #img = img.resize((512, 512))
     img = ImageEnhance.Contrast(img).enhance(1.5)
-
     os.makedirs("preprocessed", exist_ok=True)
     img.save(f"preprocessed/{name}.png")
-
     return img
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Generate 3D mesh from 2D image using Hunyuan3D.")
-
     parser.add_argument("--model-id", required=True, choices=[str(i) for i in range(1, 10)], help="Model ID (1–9)")
     parser.add_argument("--image-path", help="Path to single image (for non-multiview models)")
     parser.add_argument("--multiview-paths", nargs="+", help="Paths for multiview images in order: front left right back")
     parser.add_argument("--preprocess", action="store_true", help="Enable background removal and enhancement")
-
-    # Optional inference settings
+    parser.add_argument("--output-dir", help="Directory where to write the .ply file")
     parser.add_argument("--target-face-number", type=int, default=60000)
     parser.add_argument("--steps", type=int, default=60)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--octree-resolution", type=int, default=256)
-
     return parser.parse_args()
-
 
 if __name__ == "__main__":
     print("🚀 Inizio esecuzione meshGen.py")
-
     args = parse_args()
 
+    # 1) Seleziona modello
     model = {
         '1': {'repo': 'tencent/Hunyuan3D-2mini', 'subfolder': 'hunyuan3d-dit-v2-mini'},
         '2': {'repo': 'tencent/Hunyuan3D-2mini', 'subfolder': 'hunyuan3d-dit-v2-mini-fast'},
@@ -61,7 +52,7 @@ if __name__ == "__main__":
         '9': {'repo': 'tencent/Hunyuan3D-2mv',   'subfolder': 'hunyuan3d-dit-v2-mv-turbo'},
     }[args.model_id]
 
-    # Download model
+    # 2) Scarica i pesi
     local_dir = snapshot_download(
         repo_id=model['repo'],
         allow_patterns=[
@@ -78,13 +69,14 @@ if __name__ == "__main__":
         local_files_only=True
     )
 
-    # Load image(s)
+    # 3) Carica e (eventualmente) preprocessa l’immagine
     if 'mv' in model['subfolder']:
         views = ['front', 'left', 'right', 'back']
         if not args.multiview_paths or len(args.multiview_paths) != 4:
-            raise ValueError("Multiview models require exactly 4 image paths (front, left, right, back).")
+            raise ValueError("Multiview models require exactly 4 image paths")
         image_input = {
-            view: preprocess_image(Image.open(p).convert("RGBA"), view) if args.preprocess else Image.open(p).convert("RGBA")
+            view: (preprocess_image(Image.open(p).convert("RGBA"), view)
+                   if args.preprocess else Image.open(p).convert("RGBA"))
             for view, p in zip(views, args.multiview_paths)
         }
     else:
@@ -93,7 +85,7 @@ if __name__ == "__main__":
         img = Image.open(args.image_path).convert("RGBA")
         image_input = preprocess_image(img) if args.preprocess else img
 
-    # Generate mesh
+    # 4) Genera la mesh
     with torch.no_grad():
         mesh = pipeline(
             image=image_input,
@@ -103,9 +95,11 @@ if __name__ == "__main__":
             octree_resolution=args.octree_resolution
         )[0]
 
-    # Save mesh in fixed directory
-    base_dir = "/home/ubuntu/ThesisProject/3d-webgen/backend/media/results"
-    os.makedirs(base_dir, exist_ok=True)
-    output_path = os.path.join(base_dir, f"mesh_{datetime.now().strftime('%Y%m%d_%H%M%S')}.ply")
+    # 5) Salva in output-dir (o ./output)
+    out_dir = args.output_dir or "./output"
+    os.makedirs(out_dir, exist_ok=True)
+    filename = f"mesh_{datetime.now():%Y%m%d_%H%M%S}.ply"
+    output_path = os.path.join(out_dir, filename)
     mesh.export(output_path)
+
     print(f"✅ Mesh salvata in: {output_path}")
