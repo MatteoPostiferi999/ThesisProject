@@ -204,4 +204,3 @@ SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 # URL per servire i media files
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
 
-CELERY_TASK_ALWAYS_EAGER = True
