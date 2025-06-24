@@ -62,6 +62,8 @@ def process_image(job_id, input_path):
         job.error_message = str(e)
         job.save()
 
+PYTHON_VENV_PATH = "/home/ubuntu/venv_lambda/bin/python3"
+
 
 @shared_task
 def generate_mesh_task(job_id, model_id="4", preprocess=False):
@@ -90,7 +92,7 @@ def generate_mesh_task(job_id, model_id="4", preprocess=False):
             # 5) Invoco meshGen.py puntando a tmp_dir
             script = "/home/ubuntu/ThesisProject/3d-webgen/ai/meshGen.py"
             cmd = [
-                "python3", script,
+                PYTHON_VENV_PATH, script,  # <-- usa la costante
                 "--model-id", model_id,
                 "--image-path", input_path,
                 "--output-dir", tmp_dir
