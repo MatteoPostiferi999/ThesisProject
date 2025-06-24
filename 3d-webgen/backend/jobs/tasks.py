@@ -63,7 +63,7 @@ def process_image(job_id, input_path):
         job.save()
 
 
-
+@shared_task
 def generate_mesh_task(job_id, model_id="4", preprocess=False):
     job = Job.objects.get(pk=job_id)
 
