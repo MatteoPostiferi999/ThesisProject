@@ -46,22 +46,20 @@ INSTALLED_APPS = [
     'corsheaders',
     'jobs',
     'models_history',
-    "storages"
-
- # Custom app for handling jobs
+    "storages"  # Per Supabase Storage
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # Spostato più in alto
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
-
 ]
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -74,7 +72,6 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:8080",
-
 ]
 
 ROOT_URLCONF = "backend.urls"
@@ -98,7 +95,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "backend.wsgi.application"
 
 
-# Database
+# Database - CONNESSIONE AL DATABASE POSTGRESQL SUPABASE
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
@@ -111,8 +108,6 @@ DATABASES = {
         'PORT': '6543',
     }
 }
-
-
 
 
 # Password validation
@@ -156,36 +151,55 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CELERY CONFIG
-#CELERY_BROKER_URL = "redis://localhost:6379/0"
+# CELERY CONFIG - PER TASK ASINCRONI
 CELERY_BROKER_URL = "redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412"
 CELERY_RESULT_BACKEND = "redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412"
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 
+# =====================================================
+# SUPABASE STORAGE CONFIGURATION - CONFIGURAZIONE CORRETTA
+# =====================================================
 
-# Storage su Supabase (S3-compatibile)
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+# Credenziali S3 per Supabase Storage (LE TUE CREDENZIALI CORRETTE)
+AWS_ACCESS_KEY_ID = "608260a0a7cbc9e29a5b4211ed38c3a4"
+AWS_SECRET_ACCESS_KEY = "c0ad804d9b224b13e39b68610e06b3bd99c3b787426d38f07f4a0ab615eba20b"
 
-# → VALORI HARD-CODED per sviluppo LOCALE
-AWS_S3_ENDPOINT_URL      = "https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1"
-AWS_STORAGE_BUCKET_NAME  = "project-files"
-AWS_ACCESS_KEY_ID        = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MjYyODcsImV4cCI6MjA2NTMwMjI4N30.kxJxG8WQ-COxeUd4nlYC5D2pVVjTuD44k0MOAPXmrRc"
-AWS_SECRET_ACCESS_KEY    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTcyNjI4NywiZXhwIjoyMDY1MzAyMjg3fQ.P8mxN6g9qa_ug8kb8Azs4t_M14yYTaAaaHcdrdxxgVM"
-AWS_S3_REGION_NAME       = "auto"
+# Configurazione endpoint e bucket
+AWS_S3_ENDPOINT_URL = "https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/s3"
+AWS_STORAGE_BUCKET_NAME = "project-files"
+AWS_S3_REGION_NAME = "us-east-1"  # Standard per Supabase
 AWS_S3_SIGNATURE_VERSION = "s3v4"
+AWS_LOCATION = ""  # Cartella root nel bucket
 
-# Se vuoi un prefisso comune in bucket, altrimenti lascialo vuoto
-AWS_LOCATION = ""
+# URL pubblico per servire i file
+AWS_S3_CUSTOM_DOMAIN = f"muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}"
 
-# Dominio pubblico per gli oggetti
-AWS_S3_CUSTOM_DOMAIN = "https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/object/public"
+# Configurazione per bucket pubblico
+AWS_DEFAULT_ACL = 'public-read'  # Files pubblicamente leggibili
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',  # Cache per 24 ore
+}
+AWS_S3_FILE_OVERWRITE = False  # Non sovrascrivere file esistenti
+AWS_QUERYSTRING_AUTH = False  # Non aggiungere parametri di auth agli URL pubblici
+AWS_S3_VERIFY = True  # Verifica SSL
+
+# Configurazione STORAGES (Django 4.2+)
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 
-MEDIA_URL = '/media/'
+# settings.py
+SUPABASE_URL = "https://muvnrrcpfsqimwzkjzpz.supabase.co"  # Sostituisci con il tuo URL
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MjYyODcsImV4cCI6MjA2NTMwMjI4N30.kxJxG8WQ-COxeUd4nlYC5D2pVVjTuD44k0MOAPXmrRc"  # Sostituisci con la tua chiave
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # quindi .../3d-webgen/backend/media
 
-# CORS_ALLOW_ALL_ORIGINS = True  # oppure usa CORS_ALLOWED_ORIGINS
-
+# URL per servire i media files
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"

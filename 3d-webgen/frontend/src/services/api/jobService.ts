@@ -44,7 +44,7 @@ export const uploadImage = async (formData: FormData) => {
     console.log("✅ Upload riuscito:", response.data);
 
     const jobId = response.data.job_id;
-    const imageUrl = response.data.input_image; 
+    const imageUrl = response.data.input_image_url;
     if (!imageUrl) {
       console.warn("⚠️ input_image non presente nella risposta!");
     }
