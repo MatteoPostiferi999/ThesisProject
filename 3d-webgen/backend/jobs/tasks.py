@@ -92,7 +92,7 @@ def generate_mesh_task(job_id, model_id="1", preprocess=False):
             # 5) Invoco meshGen.py puntando a tmp_dir
             script = "/home/ubuntu/ThesisProject/3d-webgen/ai/meshGen.py"
             cmd = [
-                PYTHON_VENV_PATH, script,  # <-- usa la costante
+                PYTHON_VENV_PATH, script,
                 "--model-id", model_id,
                 "--image-path", input_path,
                 "--output-dir", tmp_dir
@@ -103,28 +103,27 @@ def generate_mesh_task(job_id, model_id="1", preprocess=False):
             logger.info("Eseguo: %s", " ".join(cmd))
             subprocess.run(cmd, check=True)
 
-            # 6) Trovo l’ultimo .ply in tmp_dir
-            ply_files = [f for f in os.listdir(tmp_dir) if f.endswith(".ply")]
-            if not ply_files:
-                raise RuntimeError("Nessun file .ply generato")
-            latest = sorted(ply_files)[-1]
-            local_ply = os.path.join(tmp_dir, latest)
+            # 6) Trovo l’ultimo .obj in tmp_dir
+            obj_files = [f for f in os.listdir(tmp_dir) if f.endswith(".obj")]
+            if not obj_files:
+                raise RuntimeError("Nessun file .obj generato")
+            latest_obj = sorted(obj_files)[-1]
+            local_obj = os.path.join(tmp_dir, latest_obj)
 
             # 7) Carico direttamente su Supabase (S3) tramite Django-storages
-            with open(local_ply, "rb") as f:
-                # il percorso su S3 sarà results/<nome_file>.ply
-                job.result_file.save(f"results/{latest}", File(f), save=False)
+            with open(local_obj, "rb") as f:
+                job.result_file.save(f"results/{latest_obj}", File(f), save=False)
 
         # 8) Aggiorno lo stato a COMPLETED
         job.status = "COMPLETED"
-        job.save(update_fields=["result_file","status"])
+        job.save(update_fields=["result_file", "status"])
         logger.info(f"✅ Job {job_id} completato!")
 
     except Exception as exc:
         logger.exception(f"❌ Job {job_id} fallito")
         job.status = "FAILED"
         job.error_message = str(exc)
-        job.save(update_fields=["status","error_message"])
+        job.save(update_fields=["status", "error_message"])
 
     finally:
         # Rimuovo l’immagine temporanea

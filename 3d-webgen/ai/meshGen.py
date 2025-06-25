@@ -98,8 +98,8 @@ if __name__ == "__main__":
     # 5) Salva in output-dir (o ./output)
     out_dir = args.output_dir or "./output"
     os.makedirs(out_dir, exist_ok=True)
-    filename = f"mesh_{datetime.now():%Y%m%d_%H%M%S}.ply"
+    filename = f"mesh_{datetime.now():%Y%m%d_%H%M%S}.obj"
     output_path = os.path.join(out_dir, filename)
-    mesh.export(output_path)
+    mesh.export(output_path, file_type='obj')
 
     print(f"✅ Mesh salvata in: {output_path}")
