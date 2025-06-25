@@ -66,7 +66,7 @@ PYTHON_VENV_PATH = "/home/ubuntu/venv_lambda/bin/python3"
 
 
 @shared_task
-def generate_mesh_task(job_id, model_id="4", preprocess=False):
+def generate_mesh_task(job_id, model_id="1", preprocess=False):
     job = Job.objects.get(pk=job_id)
 
     try:

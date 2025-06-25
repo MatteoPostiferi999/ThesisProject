@@ -149,6 +149,8 @@ const ImageUploader = ({
 
       const formData = new FormData();
       formData.append("image", file);
+      formData.append('model_id', selectedModel);     
+
 
       const uploadResponse = await uploadImage(formData);
 
