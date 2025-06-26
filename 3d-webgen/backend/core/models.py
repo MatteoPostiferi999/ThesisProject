@@ -1,8 +1,13 @@
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
-
 
 class Job(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="jobs"
+    )
+
     STATUS_CHOICES = [
         ("PENDING", "Pending"),
         ("IN_PROGRESS", "In Progress"),
@@ -19,5 +24,3 @@ class Job(models.Model):
 
     def __str__(self):
         return f"Job #{self.id} - {self.status}"
-
-
