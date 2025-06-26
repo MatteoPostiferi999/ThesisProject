@@ -44,3 +44,36 @@ class GeneratedModelViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'], url_path='save')
+    def save_model(self, request):
+        """
+        Endpoint dedicato per flussi speciali (e.g. admin vs free user).
+        """
+        user = request.user
+
+        # 1) Esempio: quota max = 8 per utenti free
+        if not user.is_staff:
+            if GeneratedModel.objects.filter(user=user).count() >= 8:
+                return Response(
+                    {'detail': 'Hai già raggiunto il limite di 8 modelli.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # 2) Validazione / serializzazione
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # 3) Logica differenziata
+        if user.is_staff:
+            # …magari un campo extra, o bypass quota…
+            instance = serializer.save(user=user, approved=True)
+        else:
+            # utente “free”
+            instance = serializer.save(user=user)
+
+        # 4) Risposta
+        return Response(
+            self.get_serializer(instance).data,
+            status=status.HTTP_201_CREATED
+        )

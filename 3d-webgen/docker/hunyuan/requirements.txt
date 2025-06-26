@@ -1,4 +1,3 @@
-gradio_litmodel3d
 ninja
 pybind11
 
@@ -28,7 +27,6 @@ accelerate
 #scikit-image
 
 # Demo only
-gradio
 fastapi
 mmgp==3.2.7
 uvicorn

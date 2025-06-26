@@ -15,6 +15,7 @@ import requests
 from celery import shared_task
 from django.conf import settings
 from django.core.files import File
+from models_history.models import GeneratedModel  
 
 from core.models import Job
 
@@ -61,6 +62,8 @@ def process_image(job_id, input_path):
         job.status = 'FAILED'
         job.error_message = str(e)
         job.save()
+
+
 
 PYTHON_VENV_PATH = "/home/ubuntu/venv_lambda/bin/python3"
 
@@ -113,6 +116,13 @@ def generate_mesh_task(job_id, model_id="1", preprocess=False):
             # 7) Carico direttamente su Supabase (S3) tramite Django-storages
             with open(local_obj, "rb") as f:
                 job.result_file.save(f"results/{latest_obj}", File(f), save=False)
+
+            GeneratedModel.objects.create(
+            user         = job.user,
+            model_name   = slug,                       # lo slug che hai già usato in upload
+            input_image  = job.image.url,               # URL relativo/S3
+            output_model = job.result_file.url          # URL finale del .obj
+        )
 
         # 8) Aggiorno lo stato a COMPLETED
         job.status = "COMPLETED"
