@@ -7,7 +7,10 @@ app = Celery("backend")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
-
+@app.task(bind=True, ignore_result=True)
+def debug_task(self):
+    print(f'Request: {self.request!r}')
+    
 # This is a Celery configuration file for a Django project.
 # It sets up the Celery application, configures it to use Django settings,
 # and automatically discovers tasks in the Django app.

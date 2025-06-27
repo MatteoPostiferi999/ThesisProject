@@ -155,8 +155,34 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CELERY_BROKER_URL = "redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412"
 CELERY_RESULT_BACKEND = "redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412"
 
+# Serializzazione
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+# Timeout e retry
+CELERY_TASK_TIME_LIMIT = 300  # 5 minuti
+CELERY_TASK_SOFT_TIME_LIMIT = 240  # 4 minuti
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# Auto-discovery dei task
+CELERY_AUTODISCOVER_TASKS = True
+
+# Configurazione delle code
+CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_ROUTES = {
+    'jobs.tasks.*': {'queue': 'default'},
+}
+
+# Configurazione Redis specifica
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_RETRY = True
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
+
+# Timezone
+CELERY_TIMEZONE = TIME_ZONE  # Usa la stessa timezone di Django
+CELERY_ENABLE_UTC = True
 
 # =====================================================
 # SUPABASE STORAGE CONFIGURATION - CONFIGURAZIONE CORRETTA
