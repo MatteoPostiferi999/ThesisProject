@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # Redis per le code Celery
   redis:
     image: redis:7-alpine
     ports:
@@ -10,35 +9,49 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    networks:
+      - celery-network
 
-  # Worker Celery con GPU
+  web:
+    image: matteopostiferi/hunyuan3d-2gp-app:latest
+    working_dir: /workspace/ThesisProject/3d-webgen/backend
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - DATABASE_URL=<la-tua-stringa-DB>
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - PYTHONPATH=/workspace/ThesisProject/3d-webgen:/workspace/Hunyuan3D-2GP
+    volumes:
+      - ./backend:/workspace/ThesisProject/3d-webgen/backend
+      - ./core:/workspace/ThesisProject/3d-webgen/core
+    networks:
+      - celery-network
+
   celery-worker:
     image: matteopostiferi/hunyuan3d-2gp-app:latest
     working_dir: /workspace/ThesisProject/3d-webgen/backend
     command: celery -A backend.celery worker --loglevel=info --concurrency=1
     depends_on:
       - redis
+      - web
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - CUDA_VISIBLE_DEVICES=0
       - PYTHONPATH=/workspace/ThesisProject/3d-webgen:/workspace/Hunyuan3D-2GP
     volumes:
-      # Monta directory per output e cache
+      - ./backend:/workspace/ThesisProject/3d-webgen/backend
+      - ./core:/workspace/ThesisProject/3d-webgen/core
       - ./output:/workspace/output
       - ./cache:/workspace/cache
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     restart: unless-stopped
     networks:
       - celery-network
 
-  # Opzionale: Flower per monitorare Celery
   flower:
     image: matteopostiferi/hunyuan3d-2gp-app:latest
     working_dir: /workspace/ThesisProject/3d-webgen/backend
@@ -47,9 +60,13 @@ services:
       - "5555:5555"
     depends_on:
       - redis
+      - web
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./backend:/workspace/ThesisProject/3d-webgen/backend
+      - ./core:/workspace/ThesisProject/3d-webgen/core
     networks:
       - celery-network
 
