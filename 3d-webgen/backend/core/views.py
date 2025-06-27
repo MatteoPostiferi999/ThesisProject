@@ -11,6 +11,8 @@ from .serializers import JobSerializer
 from .models      import Job
 from models_history.models import GeneratedModel
 from jobs.tasks   import generate_mesh_task
+import logging
+logger = logging.getLogger(__name__)
 
 # Mappatura slug → ID numerico
 SLUG_TO_NUM = {
@@ -77,7 +79,9 @@ class JobViewSet(viewsets.ModelViewSet):
         job.image.save(filename, ContentFile(image.read()), save=True)
 
         # —————— 5) Accodamento Celery ——————
-        generate_mesh_task.delay(job.id, slug=slug, model_id=model_id)
+        logger.info("✅ STO PER CHIAMARE CELERY")
+        result = generate_mesh_task.delay(job.id, slug=slug, model_id=model_id)
+        logger.info(f"📤 Task inviato? ID = {result.id}")
 
         # —————— 6) Risposta al frontend ——————
         return Response({
