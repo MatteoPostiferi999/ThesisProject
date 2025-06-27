@@ -74,3 +74,12 @@ thesis/*.log
 thesis/*.out
 thesis/*.pdf
 thesis/*.toc
+
+
+# Nel tuo .gitignore, aggiungi:
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ma NON aggiungere .env.production (va committato)

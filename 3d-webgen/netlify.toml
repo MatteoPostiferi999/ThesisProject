@@ -1,0 +1,51 @@
+# netlify.toml - File di configurazione Netlify
+# Crea questo file nella root del tuo progetto frontend
+
+[build]
+  # Comando per build del progetto
+  command = "npm run build"
+  
+  # Directory di output (dove Vite mette i file built)
+  publish = "dist"
+  
+  # Directory base (se il frontend è in una sottocartella)
+  # base = "frontend/"
+
+[build.environment]
+  # Versione Node.js da usare
+  NODE_VERSION = "18"
+  
+  # Variabili environment per il build
+  VITE_API_URL = "http://129.146.48.166:8000"
+  
+  # Se usi altre env variables
+  # VITE_SUPABASE_URL = "https://muvnrrcpfsqimwzkjzpz.supabase.co"
+
+# Redirect per Single Page Application (React Router)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers per sicurezza
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Headers per API calls (CORS)
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET,POST,PUT,DELETE,OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type,Authorization"
+
+# Cache per assets statici
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

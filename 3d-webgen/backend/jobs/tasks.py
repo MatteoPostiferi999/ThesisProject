@@ -65,18 +65,6 @@ def process_image(job_id, input_path):
 
 
 
-Pimport os
-import tempfile
-import subprocess
-import requests
-from celery import shared_task
-from celery.utils.log import get_task_logger
-from django.core.files import File
-from django.utils import timezone
-from .models import Job, GeneratedModel
-
-logger = get_task_logger(__name__)
-
 PYTHON_VENV_PATH = "python3"
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)

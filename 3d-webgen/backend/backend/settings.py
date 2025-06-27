@@ -72,8 +72,17 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:8080",
+    "http://127.0.0.1:8080",  # Aggiungi questo
+    "http://0.0.0.0:8080",    # E questo
 ]
 
+# E aggiungi anche
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '129-146-48-166',  # Il tuo hostname
+]
 ROOT_URLCONF = "backend.urls"
 
 TEMPLATES = [
