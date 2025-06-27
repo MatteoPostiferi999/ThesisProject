@@ -71,27 +71,37 @@ PYTHON_VENV_PATH = "python3"
 def generate_mesh_task(job_id, slug, model_id="1", preprocess=False):
     job = Job.objects.get(pk=job_id)
 
-    try:
-        logger.info(f"🚀 Generazione mesh per job {job_id} (model {model_id})")
+    logger.info(f"🚀 Avvio generazione mesh per job {job_id} (model {model_id})")
 
-        # 1) Mark in progress
+    try:
+        # 1) Stato IN_PROGRESS
         job.status = "IN_PROGRESS"
         job.save(update_fields=["status"])
 
-        # 2) Download dell’immagine da Supabase
-        resp = requests.get(job.image.url, stream=True)
-        resp.raise_for_status()
+        # 2) Download immagine
+        try:
+            logger.info(f"📥 Download immagine da: {job.image.url}")
+            resp = requests.get(job.image.url, stream=True)
+            resp.raise_for_status()
+        except Exception as e:
+            raise RuntimeError(f"Errore durante il download dell’immagine: {e}")
 
-        # 3) Scrivo l’immagine in un file temporaneo
-        ext = os.path.splitext(job.image.name)[1] or ".png"
-        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_img:
-            for chunk in resp.iter_content(8192):
-                tmp_img.write(chunk)
-            input_path = tmp_img.name
+        # 3) Scrittura immagine su disco
+        try:
+            ext = os.path.splitext(job.image.name)[1] or ".png"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_img:
+                for chunk in resp.iter_content(8192):
+                    tmp_img.write(chunk)
+                input_path = tmp_img.name
+            logger.info(f"📸 Immagine salvata temporaneamente in: {input_path}")
+        except Exception as e:
+            raise RuntimeError(f"Errore durante la scrittura del file immagine: {e}")
 
-        # 4) Creo una cartella temporanea per l’output
+        # 4) Cartella temporanea per output
         with tempfile.TemporaryDirectory() as tmp_dir:
-            # 5) Invoco meshGen.py puntando al path aggiornato
+            logger.info(f"📂 Directory di output temporanea: {tmp_dir}")
+
+            # 5) Chiamata a meshGen.py
             script = "/workspace/ThesisProject/3d-webgen/ai/meshGen.py"
             cmd = [
                 PYTHON_VENV_PATH, script,
@@ -102,20 +112,31 @@ def generate_mesh_task(job_id, slug, model_id="1", preprocess=False):
             if preprocess:
                 cmd.append("--preprocess")
 
-            logger.info("Eseguo: %s", " ".join(cmd))
-            subprocess.run(cmd, check=True)
+            logger.info(f"⚙️ Comando: {' '.join(cmd)}")
 
-            # 6) Trovo l’ultimo .obj in tmp_dir
+            try:
+                subprocess.run(cmd, check=True)
+                logger.info("✅ meshGen.py eseguito con successo")
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(f"Errore nell’esecuzione di meshGen.py: {e}")
+
+            # 6) Controllo output
             obj_files = [f for f in os.listdir(tmp_dir) if f.endswith(".obj")]
             if not obj_files:
-                raise RuntimeError("Nessun file .obj generato")
+                raise RuntimeError("❌ Nessun file .obj generato in output")
             latest_obj = sorted(obj_files)[-1]
             local_obj = os.path.join(tmp_dir, latest_obj)
+            logger.info(f"📦 File .obj trovato: {local_obj}")
 
-            # 7) Carico su Supabase/S3
-            with open(local_obj, "rb") as f:
-                job.result_file.save(f"results/{latest_obj}", File(f), save=False)
+            # 7) Upload su Supabase/S3
+            try:
+                with open(local_obj, "rb") as f:
+                    job.result_file.save(f"results/{latest_obj}", File(f), save=False)
+                logger.info(f"📤 Upload completato su: {job.result_file.name}")
+            except Exception as e:
+                raise RuntimeError(f"Errore durante l’upload del file .obj: {e}")
 
+            # 8) Salvataggio in cronologia
             GeneratedModel.objects.create(
                 user         = job.user,
                 job          = job,
@@ -123,21 +144,23 @@ def generate_mesh_task(job_id, slug, model_id="1", preprocess=False):
                 input_image  = job.image.url,
                 output_model = job.result_file.url,
             )
+            logger.info("🗂️ Modello salvato nella cronologia utente")
 
-        # 8) Completo il job
+        # 9) Job completato
         job.status = "COMPLETED"
         job.save(update_fields=["result_file", "status"])
-        logger.info(f"✅ Job {job_id} completato!")
+        logger.info(f"✅ Job {job_id} completato con successo!")
 
     except Exception as exc:
-        logger.exception(f"❌ Job {job_id} fallito")
+        logger.exception(f"❌ Job {job_id} fallito: {exc}")
         job.status = "FAILED"
         job.error_message = str(exc)
         job.save(update_fields=["status", "error_message"])
 
     finally:
-        # Rimuovo l’immagine temporanea
         try:
-            os.remove(input_path)
+            if input_path and os.path.exists(input_path):
+                os.remove(input_path)
+                logger.info(f"🧹 File temporaneo rimosso: {input_path}")
         except Exception:
             pass
