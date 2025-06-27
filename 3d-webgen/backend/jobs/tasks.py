@@ -65,11 +65,10 @@ def process_image(job_id, input_path):
 
 
 
-PYTHON_VENV_PATH = "/home/ubuntu/venv_lambda/bin/python3"
-
+PYTHON_VENV_PATH = "python3"
 
 @shared_task
-def generate_mesh_task(job_id, slug,  model_id="1", preprocess=False):
+def generate_mesh_task(job_id, slug, model_id="1", preprocess=False):
     job = Job.objects.get(pk=job_id)
 
     try:
@@ -92,8 +91,8 @@ def generate_mesh_task(job_id, slug,  model_id="1", preprocess=False):
 
         # 4) Creo una cartella temporanea per l’output
         with tempfile.TemporaryDirectory() as tmp_dir:
-            # 5) Invoco meshGen.py puntando a tmp_dir
-            script = "/home/ubuntu/ThesisProject/3d-webgen/ai/meshGen.py"
+            # 5) Invoco meshGen.py puntando al path aggiornato
+            script = "/workspace/ThesisProject/3d-webgen/ai/meshGen.py"
             cmd = [
                 PYTHON_VENV_PATH, script,
                 "--model-id", model_id,
@@ -113,19 +112,19 @@ def generate_mesh_task(job_id, slug,  model_id="1", preprocess=False):
             latest_obj = sorted(obj_files)[-1]
             local_obj = os.path.join(tmp_dir, latest_obj)
 
-            # 7) Carico direttamente su Supabase (S3) tramite Django-storages
+            # 7) Carico su Supabase/S3
             with open(local_obj, "rb") as f:
                 job.result_file.save(f"results/{latest_obj}", File(f), save=False)
 
             GeneratedModel.objects.create(
-            user         = job.user,
-            job       = job,
-            model_name   = slug,                       # lo slug che hai già usato in upload
-            input_image  = job.image.url,               # URL relativo/S3
-            output_model = job.result_file.url          # URL finale del .obj
-        )
+                user         = job.user,
+                job          = job,
+                model_name   = slug,
+                input_image  = job.image.url,
+                output_model = job.result_file.url,
+            )
 
-        # 8) Aggiorno lo stato a COMPLETED
+        # 8) Completo il job
         job.status = "COMPLETED"
         job.save(update_fields=["result_file", "status"])
         logger.info(f"✅ Job {job_id} completato!")

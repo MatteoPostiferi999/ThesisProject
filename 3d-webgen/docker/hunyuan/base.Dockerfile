@@ -1,57 +1,132 @@
-# ========================
-# Base image for Hunyuan3D with diso + torch 2.5.1
-# ========================
+# ============================
+# Base image: Dependencies and environment setup
+# ============================
 
-FROM nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 
-ENV CUDA_HOME=/usr/local/cuda
-ENV PATH=$CUDA_HOME/bin:$PATH
-ENV LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+# 🏷️ Metadata
+LABEL maintainer="matteopostiferi"
+LABEL description="Base image for Hunyuan3D-2GP with all dependencies"
+LABEL version="1.0"
+
+# 🌍 Environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
-ENV DISPLAY=:99
-ENV TORCH_CUDA_ARCH_LIST="8.6"
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV CUDA_VISIBLE_DEVICES=0
 
+# 📦 System dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    unzip \
+    python3 \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    libeigen3-dev \
+    libboost-all-dev \
+    qtbase5-dev \
+    libqt5opengl5-dev \
+    libopencv-dev \
+    libglu1-mesa-dev \
+    libgl1-mesa-dev \
+    libxrender1 \
+    libxext6 \
+    libxmu6 \
+    libxi6 \
+    htop \
+    nano \
+    && rm -rf /var/lib/apt/lists/*
+
+# 🐍 Python setup
+RUN python3 -m pip install --upgrade pip setuptools wheel
+
+# 🔥 PyTorch installation (CUDA 12.4 compatible)
+RUN pip install --no-cache-dir \
+    torch==2.5.1+cu124 \
+    torchvision==0.20.1+cu124 \
+    torchaudio==2.5.1+cu124 \
+    --index-url https://download.pytorch.org/whl/test/cu124
+
+# 🧰 Core dependencies
+RUN pip install --no-cache-dir \
+    django \
+    celery \
+    djangorestframework \
+    django-cors-headers \
+    djangorestframework-simplejwt \
+    redis \
+    psycopg2-binary \
+    "django-storages[boto3]" \
+    boto3 \
+    einops \
+    diffusers \
+    transformers==4.49.0 \
+    accelerate \
+    trimesh \
+    huggingface_hub \
+    onnxruntime \
+    open3d \
+    omegaconf \
+    opencv-python \
+    rembg \
+    requests \
+    numpy \
+    scipy \
+    matplotlib \
+    pillow \
+    tqdm
+
+# 🔧 Create PyMeshLab mock script
+RUN echo 'import warnings\nimport numpy as np\n\nclass MeshSet:\n    def __init__(self): warnings.warn("Using pymeshlab mock", UserWarning)\n    def load_new_mesh(self, f): return True\n    def save_current_mesh(self, f): return True\n    def apply_filter(self, *a, **k): return True\n    def current_mesh(self): return Mesh()\n    def number_of_meshes(self): return 1\n\nclass Mesh:\n    def __init__(self): self.vertex_matrix,self.face_matrix = np.array([]),np.array([])\n    def vertex_number(self): return 0\n    def face_number(self): return 0\n\ndef print_pymeshlab_version(): return "Mock 1.0.0"\nprint("⚠️ Using pymeshlab mock")' > /tmp/pymeshlab_mock.py
+
+# 🔧 PyMeshLab installation from GitHub with fallback
+#RUN pip install --no-cache-dir git+https://github.com/cnr-isti-vclab/PyMeshLab || \
+ #   (echo "⚠️ PyMeshLab install failed, using mock..." && \
+   #  cp /tmp/pymeshlab_mock.py $(python3 -c "import site; print(site.getsitepackages()[0])")/pymeshlab.py && \
+  #   echo "✅ PyMeshLab mock installed")
+
+RUN set -eux; \
+    # 1) Disinstallo qualunque pymeshlab già presente
+    pip uninstall -y pymeshlab || true; \
+    \
+    # 2) Provo subito a installare la versione fissa
+    echo "🔧 Installo PyMeshLab==2022.2.post4"; \
+    if pip install --no-cache-dir pymeshlab==2022.2.post4; then \
+        echo "✅ PyMeshLab 2022.2.post4 installato"; \
+    else \
+        echo "⚠️ Installazione diretta fallita, installo dipendenze di sistema…"; \
+        apt-get update -qq && \
+        apt-get install -y --no-install-recommends \
+            libgl1-mesa-glx libglib2.0-0 \
+            libqt5gui5 libqt5core5a libqt5widgets5 \
+            libegl1-mesa libxkbcommon-x11-0; \
+        echo "🔧 Riprovo installazione PyMeshLab"; \
+        pip install --no-cache-dir pymeshlab==2022.2.post4; \
+    fi
+
+
+# 🧪 Create dependency verification script
+RUN echo 'import sys\ntest_modules = ["torch", "torchvision", "torchaudio", "pymeshlab", "django", "celery", "requests", "transformers", "diffusers", "trimesh", "cv2", "numpy"]\nprint("🧪 Dependency verification:")\nfailed = []\nfor module in test_modules:\n    try:\n        __import__(module)\n        print(f"✅ {module}")\n    except ImportError as e:\n        print(f"❌ {module}: {str(e)[:50]}")\n        failed.append(module)\nif failed:\n    print(f"⚠️ Failed modules: {failed}")\nelse:\n    print("🎉 All core dependencies verified!")' > /tmp/verify_deps.py
+
+# 🧪 Run dependency verification
+RUN python3 /tmp/verify_deps.py
+
+# 🔍 Create CUDA verification script
+RUN echo 'import torch\nprint(f"🔥 PyTorch version: {torch.__version__}")\nprint(f"🚀 CUDA available: {torch.cuda.is_available()}")\nif torch.cuda.is_available():\n    try:\n        print(f"💻 GPU: {torch.cuda.get_device_name(0)}")\n        print(f"🎯 CUDA version: {torch.version.cuda}")\n    except:\n        print("ℹ️ GPU info not available during build")\nelse:\n    print("ℹ️ CUDA not available during build (normal)")' > /tmp/verify_cuda.py
+
+# 🔍 Run CUDA verification
+RUN python3 /tmp/verify_cuda.py
+
+# 🧹 Cleanup
+RUN rm -f /tmp/pymeshlab_mock.py /tmp/verify_deps.py /tmp/verify_cuda.py
+
+# 📁 Workspace setup
 WORKDIR /workspace
 
-# 🧰 Install system dependencies
-RUN apt update && apt install -y \
-    python3-pip python3-dev git build-essential cmake ninja-build \
-    qtbase5-dev libqt5opengl5-dev libqt5svg5-dev qt5-qmake \
-    libgl1-mesa-glx libglu1-mesa-dev libxext-dev libx11-dev \
-    libeigen3-dev libboost-all-dev libtbb-dev libpng-dev libjpeg-dev \
-    xvfb && \
-    rm -rf /var/lib/apt/lists/*
-
-# 🐍 Install Python essentials
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel pybind11 numpy==1.26.4
-
-# 🔥 Install PyTorch (compatible with CUDA 12.4)
-RUN pip install --no-cache-dir torch==2.5.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/test/cu124
-
-# 🧱 Build and install PyMeshLab from source
-RUN git clone --recurse-submodules https://github.com/cnr-isti-vclab/PyMeshLab.git && \
-    cd PyMeshLab && \
-    python3 setup.py build_ext --inplace && \
-    pip install . && \
-    cd .. && rm -rf PyMeshLab
-
-# 🧩 Fix diso: install CUDA toolkit headers
-RUN apt update && apt install -y cuda-toolkit-12-2
-
-# Set correct CUDA arch
-ENV TORCH_CUDA_ARCH_LIST="8.6"
-
-# Install diso
-RUN pip install --no-cache-dir --no-deps diso==0.1.4
-
-# 📦 Install other Python packages except torch/torchvision
-COPY requirements.txt .
-RUN pip install --no-deps --no-cache-dir -r requirements.txt || true
-
-# 🖥️ Entry script for Xvfb headless
-RUN echo '#!/bin/bash\nXvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &\nexec "$@"' > /entrypoint.sh && \
-    chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["bash"]
+# 🏃 Default command
+CMD ["/bin/bash"]

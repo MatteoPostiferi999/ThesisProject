@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Redis per le code Celery
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Worker Celery con GPU
+  celery-worker:
+    image: matteopostiferi/hunyuan3d-2gp-app:latest
+    working_dir: /workspace/ThesisProject/3d-webgen/backend
+    command: celery -A backend.celery worker --loglevel=info --concurrency=1
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONPATH=/workspace/ThesisProject/3d-webgen:/workspace/Hunyuan3D-2GP
+    volumes:
+      # Monta directory per output e cache
+      - ./output:/workspace/output
+      - ./cache:/workspace/cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - celery-network
+
+  # Opzionale: Flower per monitorare Celery
+  flower:
+    image: matteopostiferi/hunyuan3d-2gp-app:latest
+    working_dir: /workspace/ThesisProject/3d-webgen/backend
+    command: celery -A backend.celery flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    networks:
+      - celery-network
+
+volumes:
+  redis_data:
+
+networks:
+  celery-network:
+    driver: bridge
