@@ -77,7 +77,7 @@ class JobViewSet(viewsets.ModelViewSet):
         job.image.save(filename, ContentFile(image.read()), save=True)
 
         # —————— 5) Accodamento Celery ——————
-        generate_mesh_task.delay(job.id, model_id=model_id)
+        generate_mesh_task.delay(job.id, slug=slug, model_id=model_id)
 
         # —————— 6) Risposta al frontend ——————
         return Response({

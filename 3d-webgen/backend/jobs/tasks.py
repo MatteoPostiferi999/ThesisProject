@@ -69,7 +69,7 @@ PYTHON_VENV_PATH = "/home/ubuntu/venv_lambda/bin/python3"
 
 
 @shared_task
-def generate_mesh_task(job_id, model_id="1", preprocess=False):
+def generate_mesh_task(job_id, slug,  model_id="1", preprocess=False):
     job = Job.objects.get(pk=job_id)
 
     try:
@@ -119,6 +119,7 @@ def generate_mesh_task(job_id, model_id="1", preprocess=False):
 
             GeneratedModel.objects.create(
             user         = job.user,
+            job       = job,
             model_name   = slug,                       # lo slug che hai già usato in upload
             input_image  = job.image.url,               # URL relativo/S3
             output_model = job.result_file.url          # URL finale del .obj
