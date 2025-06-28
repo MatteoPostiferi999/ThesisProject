@@ -167,7 +167,7 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_AUTODISCOVER_TASKS = True
 
 # Configurazione delle code
-CELERY_TASK_DEFAULT_QUEUE = 'default'
+CELERY_TASK_DEFAULT_QUEUE = 'celery'
 CELERY_TASK_ROUTES = {
     'jobs.tasks.*': {'queue': 'default'},
 }
