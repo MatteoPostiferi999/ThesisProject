@@ -1,5 +1,4 @@
 # netlify.toml - File di configurazione Netlify
-# Crea questo file nella root del tuo progetto frontend
 
 [build]
   # Comando per build del progetto
@@ -7,19 +6,13 @@
   
   # Directory di output (dove Vite mette i file built)
   publish = "dist"
-  
-  # Directory base (se il frontend è in una sottocartella)
-  # base = "frontend/"
 
 [build.environment]
   # Versione Node.js da usare
   NODE_VERSION = "18"
   
   # Variabili environment per il build
-  VITE_API_URL = "http://129.146.48.166:8000"
-  
-  # Se usi altre env variables
-  # VITE_SUPABASE_URL = "https://muvnrrcpfsqimwzkjzpz.supabase.co"
+  VITE_API_URL = "https://thesisproject-production.up.railway.app"
 
 # Redirect per Single Page Application (React Router)
 [[redirects]]
