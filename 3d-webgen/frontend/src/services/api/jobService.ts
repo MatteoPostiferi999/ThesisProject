@@ -1,5 +1,8 @@
 import axios from "axios";
 
+// Ottieni base URL dall'environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export const getJobStatus = async (jobId: number) => {
   const token = localStorage.getItem("authToken");
 
@@ -8,16 +11,20 @@ export const getJobStatus = async (jobId: number) => {
     throw new Error("User not authenticated");
   }
 
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/jobs/${jobId}/status/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  const response = await axios.get(`/api/jobs/${jobId}/status/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return response.data;
+    console.log('getJobStatus response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('getJobStatus error:', error);
+    throw error;
+  }
 };
-
 
 export const uploadImage = async (formData: FormData) => {
   const token = localStorage.getItem("authToken");
@@ -34,7 +41,7 @@ export const uploadImage = async (formData: FormData) => {
       console.log(`📤 FormData: ${pair[0]} =`, pair[1]);
     }
 
-    const response = await axios.post("/api/jobs/upload/", formData, {
+    const response = await axios.post(`${API_BASE_URL}/api/jobs/upload/`, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
