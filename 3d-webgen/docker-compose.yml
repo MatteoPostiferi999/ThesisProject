@@ -1,101 +1,101 @@
 services:
-  # Django Backend
-  web:
-    image: matteopostiferi/hunyuan3d-2gp-app:latest
-    working_dir: /workspace/ThesisProject/3d-webgen/backend
-    command: /bin/bash -c "cd /workspace/ThesisProject/3d-webgen/backend && python3 manage.py runserver 0.0.0.0:8000"
-    ports:
-      - "8000:8000"
-    environment:
-      # Django settings
-      - DJANGO_SETTINGS_MODULE=backend.settings
-      - DEBUG=True
-      # Stesso Redis di Railway per entrambi i servizi
-      - CELERY_BROKER_URL=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412/0
-      - CELERY_RESULT_BACKEND=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412/0
-      # Aggiungi altre variabili che ti servono
-      - SECRET_KEY=your-secret-key-here
-      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
-    volumes:
-      - media_files:/workspace/data
-      - static_files:/workspace/output
-    restart: unless-stopped
-    depends_on:
-      - celery-worker
-    # Healthcheck per verificare che Django sia up
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # Celery Worker (con GPU)
+  # Celery Worker (solo GPU processing)
   celery-worker:
     image: matteopostiferi/hunyuan3d-2gp-app:latest
+    container_name: celery-worker
     working_dir: /workspace/ThesisProject/3d-webgen/backend
-    command: /bin/bash -c "pip install flower && cd /workspace/ThesisProject/3d-webgen/backend && celery -A backend flower --port=5555 --broker=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412/0"
+    command: celery -A backend worker --loglevel=info --pool=solo -Q celery,default
     environment:
-      # Django settings (IMPORTANTE!)
+      # Django settings (necessario per Celery)
       - DJANGO_SETTINGS_MODULE=backend.settings
-      # Redis Railway
-      - CELERY_BROKER_URL=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412/0
-      - CELERY_RESULT_BACKEND=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412/0
+      
+      # Redis Railway connection
+      - CELERY_BROKER_URL=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412
+      - CELERY_RESULT_BACKEND=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412
+      
+      # Celery settings
       - CELERY_ACCEPT_CONTENT=json
       - CELERY_TASK_SERIALIZER=json
       - CELERY_RESULT_SERIALIZER=json
+      - CELERY_TIMEZONE=UTC
+      - CELERY_ENABLE_UTC=True
+      
+      # Supabase Database (per Django ORM)
+      - DB_NAME=postgres
+      - DB_USER=postgres.muvnrrcpfsqimwzkjzpz
+      - DB_PASSWORD=**Tfd4Pu?a*yAi!
+      - DB_HOST=aws-0-eu-west-3.pooler.supabase.com
+      - DB_PORT=6543
+      
+      # Supabase Storage (per file upload)
+      - AWS_ACCESS_KEY_ID=608260a0a7cbc9e29a5b4211ed38c3a4
+      - AWS_SECRET_ACCESS_KEY=c0ad804d9b224b13e39b68610e06b3bd99c3b787426d38f07f4a0ab615eba20b
+      - AWS_S3_ENDPOINT_URL=https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/s3
+      - AWS_STORAGE_BUCKET_NAME=project-files
+      - AWS_S3_REGION_NAME=us-east-1
+      
       # GPU config
       - CUDA_VISIBLE_DEVICES=0
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      # PyTorch ottimizzazioni
+      
+      # Ottimizzazioni PyTorch
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+      
+      # Hunyuan3D paths
+      - MODEL_CACHE_DIR=/app/models
+      - OUTPUT_DIR=/app/outputs
+      
     volumes:
-      - media_files:/workspace/data
-    restart: unless-stopped
-    # GPU support
-    runtime: nvidia
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+      - hunyuan_cache:/root/.cache
+      
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: all
+              count: 1
               capabilities: [gpu]
+              
+    restart: unless-stopped
+    networks:
+      - celery-network
+      
     healthcheck:
-      test: ["CMD", "celery", "-A", "backend", "inspect", "ping"]
+      test: ["CMD", "python3", "-c", "import redis; r=redis.from_url('redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412'); print('OK' if r.ping() else 'FAIL')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
-  # Flower (monitoring Celery)
+  # Flower (monitoring opzionale)
   flower:
     image: matteopostiferi/hunyuan3d-2gp-app:latest
+    container_name: flower-monitor
     working_dir: /workspace/ThesisProject/3d-webgen/backend
-    command: /bin/bash -c "cd /workspace/ThesisProject/3d-webgen/backend && celery -A backend worker --loglevel=info --concurrency=1"
+    command: bash -c "pip install flower && celery -A backend flower --port=5555"
     ports:
       - "5555:5555"
     environment:
       - DJANGO_SETTINGS_MODULE=backend.settings
-      - CELERY_BROKER_URL=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412/0
-      - CELERY_RESULT_BACKEND=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412/0
+      - CELERY_BROKER_URL=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412
+      - CELERY_RESULT_BACKEND=redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412
       - FLOWER_BASIC_AUTH=admin:password123
     depends_on:
-      web:
-        condition: service_healthy
       celery-worker:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - celery-network
 
-# Volumi condivisi
+# Volumi per cache e modelli
 volumes:
-  media_files:
-    driver: local
-  static_files:
+  hunyuan_cache:
     driver: local
 
-# Network interno
+# Network
 networks:
-  default:
-    name: hunyuan3d_network
+  celery-network:
+    driver: bridge

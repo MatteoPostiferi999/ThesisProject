@@ -11,6 +11,9 @@ import time
 import logging
 import tempfile
 import requests
+from django.utils import timezone
+
+
 
 from celery import shared_task
 from django.conf import settings
@@ -64,7 +67,7 @@ def process_image(job_id, input_path):
         job.save()
 
 
-
+# Configurazione percorso Python
 PYTHON_VENV_PATH = "python3"
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -110,9 +113,8 @@ def generate_mesh_task(self, job_id, slug, model_id="1", preprocess=False):
         try:
             old_status = job.status
             job.status = "IN_PROGRESS"
-            job.task_id = task_id  # Salva l'ID del task
-            job.started_at = timezone.now()  # Aggiungi questo campo se non c'è
-            job.save(update_fields=["status", "task_id"])
+            job.updated_at = timezone.now()  # Usa updated_at che esiste nel modello
+            job.save(update_fields=["status", "updated_at"])
             logger.info(f"✅ Status aggiornato: {old_status} → IN_PROGRESS")
         except Exception as e:
             error_msg = f"❌ Errore nell'aggiornamento dello status: {str(e)}"
@@ -341,8 +343,8 @@ def generate_mesh_task(self, job_id, slug, model_id="1", preprocess=False):
         
         try:
             job.status = "COMPLETED"
-            job.completed_at = timezone.now()
-            job.save(update_fields=["result_file", "status", "completed_at"])
+            job.updated_at = timezone.now()
+            job.save(update_fields=["result_file", "status", "updated_at"])
             logger.info(f"✅ Job {job_id} completato con successo!")
             
         except Exception as e:
@@ -379,8 +381,8 @@ def generate_mesh_task(self, job_id, slug, model_id="1", preprocess=False):
             job = Job.objects.get(pk=job_id)
             job.status = "FAILED"
             job.error_message = str(exc)
-            job.failed_at = timezone.now()
-            job.save(update_fields=["status", "error_message", "failed_at"])
+            job.updated_at = timezone.now()  # Usa updated_at invece di failed_at
+            job.save(update_fields=["status", "error_message", "updated_at"])
             logger.info(f"✅ Status job aggiornato a FAILED")
         except Exception as save_error:
             logger.error(f"❌ Errore nell'aggiornamento del job: {save_error}")
