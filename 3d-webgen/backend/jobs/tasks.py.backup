@@ -1,4 +1,4 @@
-from django.utils import timezone
+
 from celery import shared_task
 from core.models import Job
 import subprocess
@@ -11,14 +11,61 @@ import time
 import logging
 import tempfile
 import requests
+from django.utils import timezone
+
+
+
 from celery import shared_task
 from django.conf import settings
 from django.core.files import File
 from models_history.models import GeneratedModel  
+
 from core.models import Job
 
-# Setup logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+
+
+# Celery task to generate mesh using Docker
+# This task is triggered when a new job is created and runs in the background.
+# It uses the Docker image 'matteopostiferi/hunyuan-gpu' to process the input image and generate a mesh.
+# The task updates the job status in the database and handles any errors that may occur during processing.
+# The task takes the job ID, model ID, and a preprocess flag as arguments.
+# The model ID specifies which model to use for mesh generation, and the preprocess flag indicates whether to apply preprocessing steps.
+
+
+
+
+@shared_task
+def process_image(job_id, input_path):
+    try:
+        job = Job.objects.get(id=job_id)
+
+        # Simula elaborazione
+        print("GENERO MESH: START")
+
+        time.sleep(30)  # tempo fittizio
+        print("GENERO MESH: DONE")
+
+
+        # Simula risultato copiando una mesh finta
+        fake_output_path = os.path.join(settings.MEDIA_ROOT, 'PROVA.obj')
+        result_path = os.path.join(settings.MEDIA_ROOT, 'results', f'{job_id}_mesh.obj')
+
+
+        with open(fake_output_path, 'rb') as fsrc, open(result_path, 'wb') as fdst:
+            fdst.write(fsrc.read())
+
+        # Salva path nel job
+        job.result_file.name = f"results/{job_id}_mesh.obj"
+        job.status = 'COMPLETED'
+        job.save()
+    except Exception as e:
+        job.status = 'FAILED'
+        job.error_message = str(e)
+        job.save()
+
 
 # Configurazione percorso Python
 PYTHON_VENV_PATH = "python3"
