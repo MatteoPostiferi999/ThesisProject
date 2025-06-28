@@ -29,7 +29,7 @@ RUN echo "📦 Installing Hunyuan3D-2GP..." && \
 ENV PYTHONPATH="/workspace/Hunyuan3D-2GP:/workspace/ThesisProject/3d-webgen/backend:$PYTHONPATH"
 
 # 🧪 Verify Hunyuan3D only
-RUN python3 -c "
+COPY <<EOF /tmp/verify_hunyuan.py
 try:
     import hy3dgen
     print('✅ hy3dgen base import successful')
@@ -49,7 +49,9 @@ except Exception as e:
     print(f'⚠️ Verification error: {str(e)}')
     import traceback
     traceback.print_exc()
-"
+EOF
+
+RUN python3 /tmp/verify_hunyuan.py && rm /tmp/verify_hunyuan.py
 
 # 🔧 Setup working directories for Celery
 RUN mkdir -p /app/models /app/outputs
