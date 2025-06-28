@@ -1,5 +1,5 @@
 # ============================
-# Final image: ONLY Celery Worker for Hunyuan3D
+# Final image: Complete Celery Worker for Hunyuan3D
 # ============================
 
 FROM matteopostiferi/hunyuan-base:latest
@@ -19,7 +19,7 @@ RUN echo "🩹 Applying patches..." && \
     sed -i '/from hy3dgen import offload/d' hy3dgen/shapegen/models/autoencoders/surface_extractors.py && \
     echo "✅ Patches applied successfully"
 
-# 📦 Install ONLY Hunyuan3D-2GP (no Django dependencies)
+# 📦 Install Hunyuan3D-2GP
 RUN echo "📦 Installing Hunyuan3D-2GP..." && \
     cd Hunyuan3D-2GP && \
     pip install -e . && \
@@ -28,61 +28,118 @@ RUN echo "📦 Installing Hunyuan3D-2GP..." && \
 # 🧠 Update environment variables
 ENV PYTHONPATH="/workspace/Hunyuan3D-2GP:/workspace/ThesisProject/3d-webgen/backend:$PYTHONPATH"
 
-# 🧪 Verify Hunyuan3D only
-COPY <<EOF /tmp/verify_hunyuan.py
+# 🧪 Complete verification test
+COPY <<EOF /tmp/verify_complete.py
 try:
+    print('🔍 Testing all Celery Worker dependencies...')
+    print()
+    
+    # Django stack
+    import django
+    print(f'✅ Django {django.__version__}')
+    
+    import psycopg2
+    print('✅ psycopg2 (Supabase PostgreSQL connection)')
+    
+    import boto3
+    print('✅ boto3 (Supabase Storage)')
+    
+    from django.core.management import execute_from_command_line
+    print('✅ Django management commands')
+    
+    # Celery stack
+    import celery
+    print(f'✅ Celery {celery.__version__}')
+    
+    import redis
+    print('✅ Redis client')
+    
+    # Hunyuan3D stack
     import hy3dgen
-    print('✅ hy3dgen base import successful')
+    print('✅ hy3dgen base import')
     
     from hy3dgen.shapegen import Hunyuan3DDiTFlowMatchingPipeline
-    print('✅ Hunyuan3DDiTFlowMatchingPipeline import successful')
+    print('✅ Hunyuan3DDiTFlowMatchingPipeline')
     
+    # PyTorch + GPU
     import torch
-    print(f'✅ PyTorch {torch.__version__} with CUDA: {torch.cuda.is_available()}')
+    print(f'✅ PyTorch {torch.__version__}')
+    print(f'✅ CUDA available: {torch.cuda.is_available()}')
     
-    import celery
-    print(f'✅ Celery {celery.__version__} ready')
+    # Processing dependencies
+    import cv2
+    import numpy as np
+    import trimesh
+    print('✅ Computer vision and 3D processing')
     
-    print('🎉 Celery Worker container verified!')
+    print()
+    print('🎉 ALL DEPENDENCIES VERIFIED!')
+    print('🚀 Celery Worker container ready for production!')
     
 except Exception as e:
-    print(f'⚠️ Verification error: {str(e)}')
+    print(f'❌ Verification failed: {str(e)}')
     import traceback
     traceback.print_exc()
+    exit(1)
 EOF
 
-RUN python3 /tmp/verify_hunyuan.py && rm /tmp/verify_hunyuan.py
+RUN python3 /tmp/verify_complete.py && rm /tmp/verify_complete.py
 
-# 🔧 Setup working directories for Celery
+# 🔧 Setup working directories
 RUN mkdir -p /app/models /app/outputs
 
-# 🚀 Celery worker entry point
+# 🚀 Celery worker entry points
 COPY <<EOF /usr/local/bin/run-celery-worker
 #!/bin/bash
+echo "🚀 Starting Celery Worker..."
 cd /workspace/ThesisProject/3d-webgen/backend
 exec celery -A backend worker --loglevel=info --pool=solo
 EOF
 
-RUN chmod +x /usr/local/bin/run-celery-worker
+COPY <<EOF /usr/local/bin/run-celery-with-queues
+#!/bin/bash
+echo "🚀 Starting Celery Worker with multiple queues..."
+cd /workspace/ThesisProject/3d-webgen/backend
+exec celery -A backend worker --loglevel=info --pool=solo -Q celery,default
+EOF
+
+RUN chmod +x /usr/local/bin/run-celery-worker /usr/local/bin/run-celery-with-queues
 
 # 💡 Usage information
 COPY <<EOF /workspace/README.txt
-🎉 Celery Worker Container Ready!
+🎉 Complete Celery Worker Container Ready!
 
-🚀 Start Celery Worker:
-   celery -A backend worker --loglevel=info --pool=solo
+🚀 Start options:
+   1. Default: celery -A backend worker --loglevel=info --pool=solo
+   2. Multi-queue: celery -A backend worker --loglevel=info --pool=solo -Q celery,default
+   3. Helper script: run-celery-worker
+   4. Multi-queue script: run-celery-with-queues
 
 📁 Important paths:
-   - ThesisProject: /workspace/ThesisProject/3d-webgen/backend
+   - ThesisProject backend: /workspace/ThesisProject/3d-webgen/backend
    - Hunyuan3D: /workspace/Hunyuan3D-2GP
    - Models cache: /app/models  
    - Outputs: /app/outputs
 
 🔧 Environment:
    - Python: /usr/bin/python3
-   - PYTHONPATH includes both projects
-   - CUDA enabled for GPU processing
+   - PYTHONPATH: includes Django backend and Hunyuan3D
+   - CUDA: enabled for GPU processing
+   - Django: full stack for database and storage
+   - Celery: configured for Redis connection
+
+🧪 Dependencies verified:
+   ✅ Django + PostgreSQL (Supabase)
+   ✅ Django Storage + S3 (Supabase)
+   ✅ Celery + Redis (Railway)
+   ✅ Hunyuan3D + PyTorch + CUDA
+   ✅ Computer vision and 3D processing
 EOF
 
-# 👟 Default command: Start Celery Worker
-CMD ["celery", "-A", "backend", "worker", "--loglevel=info", "--pool=solo"]
+# 🏷️ Final metadata
+LABEL hunyuan3d.version="2GP"
+LABEL thesis.project="3d-webgen-celery"
+LABEL dependencies="complete"
+
+# 👟 Default command: Start Celery Worker with both queues
+CMD ["celery", "-A", "backend", "worker", "--loglevel=info", "--pool=solo", "-Q", "celery,default"]
