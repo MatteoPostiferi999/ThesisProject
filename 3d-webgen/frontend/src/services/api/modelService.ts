@@ -2,6 +2,9 @@
 import axios from "axios";
 import { GeneratedModel } from "@/types/models"; 
 
+// Ottieni base URL dall'environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export const getUserModels = async (params?: {
   model_name?: string;
   order?: string;
@@ -12,25 +15,39 @@ export const getUserModels = async (params?: {
     throw new Error("No auth token found.");
   }
 
-  const response = await axios.get("/api/generated-models/my-models/", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    params, 
-  });
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/generated-models/my-models/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params, 
+    });
 
-  return response.data;
+    console.log('getUserModels response:', response.data); // Debug log
+    return response.data;
+  } catch (error) {
+    console.error('getUserModels error:', error);
+    throw error;
+  }
 };
-
 
 export const deleteModel = async (id: number) => {
   const token = localStorage.getItem("authToken");
 
-  const res = await axios.delete(`/api/generated-models/${id}/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  if (!token) {
+    throw new Error("No auth token found.");
+  }
 
-  return res.data;
+  try {
+    const res = await axios.delete(`${API_BASE_URL}/api/generated-models/${id}/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error('deleteModel error:', error);
+    throw error;
+  }
 };
