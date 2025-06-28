@@ -12,26 +12,27 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
-
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-^_mm@qbj)t7)ac(_0x==7gj@0h78@!nswtc!4l%1i=xzw!6859"
+SECRET_KEY = config('SECRET_KEY', default="django-insecure-^_mm@qbj)t7)ac(_0x==7gj@0h78@!nswtc!4l%1i=xzw!6859")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
-
+# Hosts permessi - aggiunto .onrender.com per Render
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '.onrender.com',  # Per Render
+    '129-146-48-166',  # Il tuo hostname Lambda AI
+]
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -50,9 +51,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # Spostato in cima
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Per servire file statici su Render
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",  # Spostato più in alto
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -69,20 +71,18 @@ REST_FRAMEWORK = {
     ),
 }
 
+# CORS - aggiunto Netlify e Render
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:8080",
-    "http://127.0.0.1:8080",  # Aggiungi questo
-    "http://0.0.0.0:8080",    # E questo
+    "http://127.0.0.1:8080",
+    "http://0.0.0.0:8080",
+    config('FRONTEND_URL', default=''),  # URL Netlify dalla variabile d'ambiente
 ]
 
-# E aggiungi anche
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '0.0.0.0',
-    '129-146-48-166',  # Il tuo hostname
-]
+# Per sviluppo - permetti tutti i CORS (SOLO in DEBUG)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL', default=DEBUG, cast=bool)
+
 ROOT_URLCONF = "backend.urls"
 
 TEMPLATES = [
@@ -103,25 +103,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.wsgi.application"
 
-
-# Database - CONNESSIONE AL DATABASE POSTGRESQL SUPABASE
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
+# Database - Supabase con variabili d'ambiente
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres.muvnrrcpfsqimwzkjzpz',
-        'PASSWORD': '**Tfd4Pu?a*yAi!',
-        'HOST': 'aws-0-eu-west-3.pooler.supabase.com',
-        'PORT': '6543',
+        'NAME': config('DB_NAME', default='postgres'),
+        'USER': config('DB_USER', default='postgres.muvnrrcpfsqimwzkjzpz'),
+        'PASSWORD': config('DB_PASSWORD', default='**Tfd4Pu?a*yAi!'),
+        'HOST': config('DB_HOST', default='aws-0-eu-west-3.pooler.supabase.com'),
+        'PORT': config('DB_PORT', default='6543'),
     }
 }
 
-
 # Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -137,32 +131,25 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/
-
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
 
+# Static files - configurazione per Render
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
-STATIC_URL = "static/"
+# WhiteNoise per servire file statici
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CELERY CONFIG - PER TASK ASINCRONI
-CELERY_BROKER_URL = "redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412"
-CELERY_RESULT_BACKEND = "redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412"
+# CELERY CONFIG - Redis con variabili d'ambiente
+CELERY_BROKER_URL = config('REDIS_URL', default="redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412")
+CELERY_RESULT_BACKEND = config('REDIS_URL', default="redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412")
 
 # Serializzazione
 CELERY_ACCEPT_CONTENT = ["json"]
@@ -190,35 +177,35 @@ CELERY_BROKER_CONNECTION_RETRY = True
 CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
 
 # Timezone
-CELERY_TIMEZONE = TIME_ZONE  # Usa la stessa timezone di Django
+CELERY_TIMEZONE = TIME_ZONE
 CELERY_ENABLE_UTC = True
 
 # =====================================================
-# SUPABASE STORAGE CONFIGURATION - CONFIGURAZIONE CORRETTA
+# SUPABASE STORAGE CONFIGURATION - Con variabili d'ambiente
 # =====================================================
 
-# Credenziali S3 per Supabase Storage (LE TUE CREDENZIALI CORRETTE)
-AWS_ACCESS_KEY_ID = "608260a0a7cbc9e29a5b4211ed38c3a4"
-AWS_SECRET_ACCESS_KEY = "c0ad804d9b224b13e39b68610e06b3bd99c3b787426d38f07f4a0ab615eba20b"
+# Credenziali S3 per Supabase Storage
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default="608260a0a7cbc9e29a5b4211ed38c3a4")
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default="c0ad804d9b224b13e39b68610e06b3bd99c3b787426d38f07f4a0ab615eba20b")
 
 # Configurazione endpoint e bucket
-AWS_S3_ENDPOINT_URL = "https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/s3"
-AWS_STORAGE_BUCKET_NAME = "project-files"
-AWS_S3_REGION_NAME = "us-east-1"  # Standard per Supabase
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default="https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/s3")
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default="project-files")
+AWS_S3_REGION_NAME = "us-east-1"
 AWS_S3_SIGNATURE_VERSION = "s3v4"
-AWS_LOCATION = ""  # Cartella root nel bucket
+AWS_LOCATION = ""
 
 # URL pubblico per servire i file
 AWS_S3_CUSTOM_DOMAIN = f"muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}"
 
 # Configurazione per bucket pubblico
-AWS_DEFAULT_ACL = 'public-read'  # Files pubblicamente leggibili
+AWS_DEFAULT_ACL = 'public-read'
 AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',  # Cache per 24 ore
+    'CacheControl': 'max-age=86400',
 }
-AWS_S3_FILE_OVERWRITE = False  # Non sovrascrivere file esistenti
-AWS_QUERYSTRING_AUTH = False  # Non aggiungere parametri di auth agli URL pubblici
-AWS_S3_VERIFY = True  # Verifica SSL
+AWS_S3_FILE_OVERWRITE = False
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_VERIFY = True
 
 # Configurazione STORAGES (Django 4.2+)
 STORAGES = {
@@ -226,16 +213,13 @@ STORAGES = {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",  # Cambiato per Render
     },
 }
 
-
-# settings.py
-SUPABASE_URL = "https://muvnrrcpfsqimwzkjzpz.supabase.co"  # Sostituisci con il tuo URL
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MjYyODcsImV4cCI6MjA2NTMwMjI4N30.kxJxG8WQ-COxeUd4nlYC5D2pVVjTuD44k0MOAPXmrRc"  # Sostituisci con la tua chiave
-
+# Supabase config
+SUPABASE_URL = config('SUPABASE_URL', default="https://muvnrrcpfsqimwzkjzpz.supabase.co")
+SUPABASE_ANON_KEY = config('SUPABASE_ANON_KEY', default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MjYyODcsImV4cCI6MjA2NTMwMjI4N30.kxJxG8WQ-COxeUd4nlYC5D2pVVjTuD44k0MOAPXmrRc")
 
 # URL per servire i media files
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
-
