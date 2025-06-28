@@ -28,10 +28,11 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
-    '.onrender.com',  # Per Render
-    '129-146-48-166',  # Il tuo hostname Lambda AI
+    '.onrender.com',
+    '.up.railway.app',        # ← Aggiungi questo
+    '129-146-48-166',
+    'tesi2025.netlify.app',   # ← E questo
 ]
-
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
