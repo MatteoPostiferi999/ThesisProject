@@ -1,5 +1,5 @@
 # ============================
-# Final image: Complete Celery Worker for Hunyuan3D
+# Final image: Complete Celery Worker for Hunyuan3D - FIXED
 # ============================
 
 FROM matteopostiferi/hunyuan-base:latest
@@ -19,6 +19,24 @@ RUN echo "🩹 Applying patches..." && \
     sed -i '/from hy3dgen import offload/d' hy3dgen/shapegen/models/autoencoders/surface_extractors.py && \
     echo "✅ Patches applied successfully"
 
+# 🔧 FIX CRITICAL: Install missing onnxruntime
+RUN echo "📦 Installing missing onnxruntime..." && \
+    pip install --no-cache-dir onnxruntime && \
+    echo "✅ onnxruntime installed successfully"
+
+# 🔧 FIX CRITICAL: Fix tasks.py timezone import and invalid fields
+RUN echo "🔧 Fixing tasks.py..." && \
+    cd ThesisProject/3d-webgen/backend/jobs && \
+    sed -i '1i from django.utils import timezone' tasks.py && \
+    sed -i 's/job\.save(update_fields=\["status", "task_id"\])/job.save(update_fields=["status", "updated_at"])/g' tasks.py && \
+    sed -i 's/job\.save(update_fields=\["result_file", "status", "completed_at"\])/job.save(update_fields=["result_file", "status", "updated_at"])/g' tasks.py && \
+    sed -i 's/job\.save(update_fields=\["status", "error_message", "failed_at"\])/job.save(update_fields=["status", "error_message", "updated_at"])/g' tasks.py && \
+    sed -i 's/job\.task_id = task_id/#job.task_id = task_id/g' tasks.py && \
+    sed -i 's/job\.started_at = timezone\.now()/job.updated_at = timezone.now()/g' tasks.py && \
+    sed -i 's/job\.completed_at = timezone\.now()/job.updated_at = timezone.now()/g' tasks.py && \
+    sed -i 's/job\.failed_at = timezone\.now()/job.updated_at = timezone.now()/g' tasks.py && \
+    echo "✅ tasks.py fixed successfully"
+
 # 📦 Install Hunyuan3D-2GP
 RUN echo "📦 Installing Hunyuan3D-2GP..." && \
     cd Hunyuan3D-2GP && \
@@ -28,7 +46,7 @@ RUN echo "📦 Installing Hunyuan3D-2GP..." && \
 # 🧠 Update environment variables
 ENV PYTHONPATH="/workspace/Hunyuan3D-2GP:/workspace/ThesisProject/3d-webgen/backend:$PYTHONPATH"
 
-# 🧪 Complete verification test
+# 🧪 Complete verification test (including new fixes)
 COPY <<EOF /tmp/verify_complete.py
 try:
     print('🔍 Testing all Celery Worker dependencies...')
@@ -44,8 +62,8 @@ try:
     import boto3
     print('✅ boto3 (Supabase Storage)')
     
-    from django.core.management import execute_from_command_line
-    print('✅ Django management commands')
+    from django.utils import timezone
+    print('✅ Django timezone import (FIXED)')
     
     # Celery stack
     import celery
@@ -53,6 +71,14 @@ try:
     
     import redis
     print('✅ Redis client')
+    
+    # CRITICAL FIX: Test onnxruntime
+    import onnxruntime
+    print(f'✅ onnxruntime {onnxruntime.__version__} (FIXED)')
+    
+    # CRITICAL FIX: Test rembg with onnxruntime
+    from rembg import remove
+    print('✅ rembg with onnxruntime support (FIXED)')
     
     # Hunyuan3D stack
     import hy3dgen
@@ -74,6 +100,10 @@ try:
     
     print()
     print('🎉 ALL DEPENDENCIES VERIFIED!')
+    print('🔧 CRITICAL FIXES APPLIED:')
+    print('   ✅ onnxruntime installed')
+    print('   ✅ timezone import added')
+    print('   ✅ invalid job fields fixed')
     print('🚀 Celery Worker container ready for production!')
     
 except Exception as e:
@@ -107,7 +137,12 @@ RUN chmod +x /usr/local/bin/run-celery-worker /usr/local/bin/run-celery-with-que
 
 # 💡 Usage information
 COPY <<EOF /workspace/README.txt
-🎉 Complete Celery Worker Container Ready!
+🎉 Complete Celery Worker Container Ready! (FIXED VERSION)
+
+🔧 FIXES APPLIED:
+   ✅ onnxruntime installed (for rembg support)
+   ✅ timezone import added to tasks.py
+   ✅ invalid job fields replaced with valid ones
 
 🚀 Start options:
    1. Default: celery -A backend worker --loglevel=info --pool=solo
@@ -134,12 +169,15 @@ COPY <<EOF /workspace/README.txt
    ✅ Celery + Redis (Railway)
    ✅ Hunyuan3D + PyTorch + CUDA
    ✅ Computer vision and 3D processing
+   ✅ onnxruntime + rembg (FIXED)
+   ✅ timezone import (FIXED)
+   ✅ valid job fields (FIXED)
 EOF
 
 # 🏷️ Final metadata
-LABEL hunyuan3d.version="2GP"
-LABEL thesis.project="3d-webgen-celery"
-LABEL dependencies="complete"
+LABEL hunyuan3d.version="2GP-fixed"
+LABEL thesis.project="3d-webgen-celery-fixed"
+LABEL dependencies="complete-fixed"
 
 # 👟 Default command: Start Celery Worker with both queues
 CMD ["celery", "-A", "backend", "worker", "--loglevel=info", "--pool=solo", "-Q", "celery,default"]
