@@ -10,7 +10,7 @@ router.register(r'auth', AuthViewSet, basename='auth')
 urlpatterns = [
     # JWT Token Endpoints
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  
 ]
 
 urlpatterns += router.urls

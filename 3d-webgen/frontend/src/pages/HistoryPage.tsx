@@ -1,10 +1,26 @@
 import { useEffect, useState } from "react";
-import { getUserModels, deleteModel } from "@/services/api/modelService";
+import { getUserModels, deleteModel } from "@/api/services/models";
 import { GeneratedModel } from "@/types/models";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Trash2, Filter, SortDesc } from "lucide-react";
+import Viewer3D from "@/components/Viewer3D";
+import { 
+  Trash2, 
+  Filter, 
+  SortDesc, 
+  ArrowLeft, 
+  Eye, 
+  Calendar,
+  Cpu,
+  Image as ImageIcon,
+  User,
+  X,
+  Zap,
+  Crown,
+  AlertCircle,
+  CheckCircle2
+} from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -14,7 +30,7 @@ import {
 } from "@/components/ui/select";
 
 const modelOptions = [
-  { value: "all", label: "All models" },
+  { value: "all", label: "All Models" },
   { value: "hunyuan-mini-turbo", label: "Hunyuan Mini Turbo" },
   { value: "hunyuan-mini-fast", label: "Hunyuan Mini Fast" },
   { value: "hunyuan-mini", label: "Hunyuan Mini" },
@@ -28,14 +44,32 @@ const modelOptions = [
 
 const HistoryPage = () => {
   const [models, setModels] = useState<GeneratedModel[]>([]);
+  const [allModels, setAllModels] = useState<GeneratedModel[]>([]); // ✅ TUTTI i modelli dell'utente
   const [loading, setLoading] = useState(true);
   const [selectedModel, setSelectedModel] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("desc");
+  const [viewerModel, setViewerModel] = useState<string | null>(null);
+
+  // ✅ FIXED: Calcola i limiti sui TUTTI i modelli, non sui filtrati
+  const FREE_GENERATION_LIMIT = 8;
+  const generationsUsed = allModels.length; // ✅ Usa allModels invece di models
+  const generationsRemaining = Math.max(0, FREE_GENERATION_LIMIT - generationsUsed);
+  const isLimitReached = generationsUsed >= FREE_GENERATION_LIMIT;
 
   const fetchModels = () => {
     setLoading(true);
-    getUserModels({ model_name: selectedModel, order: sortOrder })
-      .then((data) => setModels(data))
+    
+    // ✅ Fetch prima TUTTI i modelli per calcolare i limiti
+    Promise.all([
+      getUserModels({ model_name: "all", order: sortOrder }), // Tutti i modelli
+      getUserModels({ model_name: selectedModel, order: sortOrder }) // Modelli filtrati
+    ])
+      .then(([allData, filteredData]) => {
+        console.log("🔍 All models received:", allData);
+        console.log("🔍 Filtered models received:", filteredData);
+        setAllModels(allData); // ✅ Salva tutti i modelli
+        setModels(filteredData); // ✅ Salva modelli filtrati
+      })
       .catch(() => toast.error("Failed to load models"))
       .finally(() => setLoading(false));
   };
@@ -48,111 +82,385 @@ const HistoryPage = () => {
     try {
       await deleteModel(id);
       toast.success("Model deleted successfully");
+      
+      // ✅ Aggiorna entrambi gli array
       setModels((prev) => prev.filter((m) => m.id !== id));
+      setAllModels((prev) => prev.filter((m) => m.id !== id));
+      
+      // ✅ Calcola le generazioni rimanenti DOPO l'aggiornamento
+      const newTotal = allModels.length - 1;
+      const newRemaining = Math.max(0, FREE_GENERATION_LIMIT - newTotal);
+      toast.info(`You now have ${newRemaining} generations remaining`);
     } catch {
       toast.error("Failed to delete model");
     }
   };
 
+  const handleView3D = (modelUrl: string) => {
+    // ✅ Chiudi viewer precedente prima di aprire nuovo
+    setViewerModel(null);
+    
+    setTimeout(() => {
+      console.log("🔍 Opening 3D model:", modelUrl);
+      setViewerModel(modelUrl);
+    }, 100); // Piccolo delay per cleanup
+  };
+
+  const closeViewer = () => {
+    setViewerModel(null);
+  };
+
+  // ✅ LIMITS: Helper function for limit status
+  const getLimitStatus = () => {
+    if (generationsRemaining > 3) {
+      return {
+        color: "text-green-600 dark:text-green-400",
+        bgColor: "bg-green-100 dark:bg-green-900/30",
+        borderColor: "border-green-200 dark:border-green-800",
+        icon: CheckCircle2,
+        message: "Good to go!"
+      };
+    } else if (generationsRemaining > 0) {
+      return {
+        color: "text-orange-600 dark:text-orange-400",
+        bgColor: "bg-orange-100 dark:bg-orange-900/30",
+        borderColor: "border-orange-200 dark:border-orange-800",
+        icon: AlertCircle,
+        message: "Running low"
+      };
+    } else {
+      return {
+        color: "text-red-600 dark:text-red-400",
+        bgColor: "bg-red-100 dark:bg-red-900/30",
+        borderColor: "border-red-200 dark:border-red-800",
+        icon: AlertCircle,
+        message: "Limit reached"
+      };
+    }
+  };
+
+  const limitStatus = getLimitStatus();
+
   return (
-    <section className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-        <h2 className="text-3xl font-bold">Your 3D Models</h2>
-        <Link to="/home" className="text-indigo-600 hover:underline text-sm">
-          ← Back to Home
-        </Link>
-      </div>
-{/* Filters */}
-<div className="flex flex-col md:flex-row gap-4 mb-6">
-  <div className="w-52">
-    <label className="text-sm font-medium mb-1 flex items-center gap-2">
-      <Filter className="w-4 h-4" />
-      Filter by model
-    </label>
-    <Select value={selectedModel} onValueChange={setSelectedModel}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select a model" />
-      </SelectTrigger>
-      <SelectContent>
-        {modelOptions.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value}>
-            {opt.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-
-  <div className="w-52">
-    <label className="text-sm font-medium mb-1 flex items-center gap-2">
-      <SortDesc className="w-4 h-4" />
-      Sort by date
-    </label>
-    <Select value={sortOrder} onValueChange={setSortOrder}>
-      <SelectTrigger>
-        <SelectValue placeholder="Sort order" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="desc">Newest first</SelectItem>
-        <SelectItem value="asc">Oldest first</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-</div>
-
-      {/* Content */}
-      {loading ? (
-        <p className="text-gray-500">Loading...</p>
-      ) : models.length === 0 ? (
-        <p className="text-gray-500">No models generated yet.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {models.map((model) => (
-            <Card
-              key={model.id}
-              className="relative p-4 space-y-3 transition transform hover:-translate-y-1 hover:shadow-lg"
+    <div className="relative min-h-screen">
+      
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-indigo-50/20 to-purple-50/30 dark:from-blue-950/10 dark:via-indigo-950/5 dark:to-purple-950/10 rounded-3xl blur-3xl -z-10" />
+      
+      <div className="relative max-w-7xl mx-auto p-6">
+        
+        {/* Header */}
+        <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-xl mb-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+                <ImageIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                  Generated Models
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Manage your 3D generation history
+                </p>
+              </div>
+            </div>
+            
+            <Link 
+              to="/home" 
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors text-sm font-medium"
             >
-              <button
-                onClick={() => handleDelete(model.id)}
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                title="Delete model"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Link>
+          </div>
+        </div>
 
-              <img
-                src={model.input_image}
-                alt="Input"
-                className="rounded-md w-full h-48 object-cover border"
-              />
+        {/* ✅ LIMITS: Generation Limit Card */}
+        <div className={`bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl border ${limitStatus.borderColor} p-6 shadow-xl mb-6`}>
+          <div className="flex items-center justify-between">
+            
+            {/* Left side - Current status */}
+            <div className="flex items-center gap-4">
+              <div className={`p-3 ${limitStatus.bgColor} rounded-2xl`}>
+                <limitStatus.icon className={`w-6 h-6 ${limitStatus.color}`} />
+              </div>
+              <div>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    Free Generations
+                  </h3>
+                  <span className={`px-3 py-1 ${limitStatus.bgColor} ${limitStatus.color} rounded-full text-sm font-medium`}>
+                    {limitStatus.message}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      {generationsUsed}
+                    </span>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">
+                      / {FREE_GENERATION_LIMIT} used
+                    </span>
+                  </div>
+                  <span className="text-gray-400">•</span>
+                  <span className={`font-medium ${limitStatus.color}`}>
+                    {generationsRemaining} remaining
+                  </span>
+                </div>
+              </div>
+            </div>
 
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-xs font-medium">
-                  {model.model_name}
-                </span>
-                <span>
-                  {new Date(model.created_at).toLocaleDateString()}{" "}
-                  {new Date(model.created_at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+            {/* Right side - Progress bar and upgrade */}
+            <div className="flex items-center gap-6">
+              
+              {/* Progress bar */}
+              <div className="flex flex-col items-end gap-2">
+                <div className="w-48 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div 
+                    className={`h-3 rounded-full transition-all duration-500 ${
+                      generationsRemaining > 3 
+                        ? 'bg-gradient-to-r from-green-400 to-green-500' 
+                        : generationsRemaining > 0
+                        ? 'bg-gradient-to-r from-orange-400 to-orange-500'
+                        : 'bg-gradient-to-r from-red-400 to-red-500'
+                    }`}
+                    style={{ width: `${(generationsUsed / FREE_GENERATION_LIMIT) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {Math.round((generationsUsed / FREE_GENERATION_LIMIT) * 100)}% used
                 </span>
               </div>
 
-              <a
-                href={model.output_model}
-                target="_blank"
-                rel="noreferrer"
-                className="block text-center mt-2 text-indigo-600 hover:underline text-sm font-medium"
-              >
-                View 3D Model →
-              </a>
-            </Card>
-          ))}
+              {/* Upgrade button (for future) */}
+              <div className="flex flex-col items-center gap-2">
+                <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-medium rounded-xl transition-all duration-300 hover:scale-105 shadow-lg opacity-50 cursor-not-allowed">
+                  <Crown className="w-4 h-4" />
+                  <span>Upgrade</span>
+                </button>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Coming soon
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Warning message when limit is reached */}
+          {isLimitReached && (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                <div>
+                  <p className="text-red-800 dark:text-red-200 font-medium">
+                    Generation limit reached
+                  </p>
+                  <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+                    You've used all {FREE_GENERATION_LIMIT} free generations. Delete some models to free up space, or upgrade to Premium for unlimited generations.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </section>
+
+        {/* Filters */}
+        <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-xl mb-6">
+          <div className="flex flex-col md:flex-row gap-6">
+            
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                Filter by Model
+              </label>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="w-full h-12 rounded-xl border-2 bg-white dark:bg-gray-800">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <SortDesc className="w-4 h-4" />
+                Sort by Date
+              </label>
+              <Select value={sortOrder} onValueChange={setSortOrder}>
+                <SelectTrigger className="w-full h-12 rounded-xl border-2 bg-white dark:bg-gray-800">
+                  <SelectValue placeholder="Sort order" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">Newest First</SelectItem>
+                  <SelectItem value="asc">Oldest First</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        {loading ? (
+          <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-12 shadow-xl text-center">
+            <div className="animate-pulse">
+              <div className="w-12 h-12 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-500 dark:text-gray-400">Loading models...</p>
+            </div>
+          </div>
+        ) : models.length === 0 ? (
+          <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-12 shadow-xl text-center">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ImageIcon className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              No Models Found
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              {selectedModel === "all" 
+                ? "Generate your first 3D model to see it here" 
+                : `No models found for ${modelOptions.find(opt => opt.value === selectedModel)?.label}`
+              }
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-xl text-sm">
+              <Zap className="w-4 h-4" />
+              <span>{generationsRemaining} free generations remaining</span>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {models.map((model) => (
+              <Card
+                key={model.id}
+                className="relative bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] group"
+              >
+                
+                {/* Delete Button */}
+                <button
+                  onClick={() => handleDelete(model.id)}
+                  className="absolute top-3 right-3 z-10 p-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                  title="Delete model"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </button>
+
+                {/* Image */}
+                <div className="relative overflow-hidden">
+                  <img
+                    src={model.input_image}
+                    alt="Input"
+                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                </div>
+
+                {/* Content */}
+                <div className="p-4 space-y-3">
+                  
+                  {/* User Info */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-blue-500" />
+                      <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
+                        {model.user || 'Unknown User'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-purple-500" />
+                      <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-xs font-medium">
+                        {model.model_name.replace('hunyuan-', '').replace('-', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Date */}
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <Calendar className="w-4 h-4" />
+                    <span>
+                      {new Date(model.created_at).toLocaleDateString()} at{" "}
+                      {new Date(model.created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    onClick={() => handleView3D(model.output_model)}
+                    className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View 3D Model
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Stats Footer */}
+        {models.length > 0 && (
+          <div className="mt-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-4 shadow-xl">
+            <div className="flex items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4" />
+                <span>
+                  {selectedModel === "all" 
+                    ? `${models.length} total models` 
+                    : `${models.length} models (${allModels.length} total)`
+                  }
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                <span>Filtered by: {modelOptions.find(opt => opt.value === selectedModel)?.label}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                <span>{generationsRemaining} generations remaining</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ 3D Viewer Modal - VERSIONE SEMPLIFICATA CON SOLO PULSANTE CHIUDI */}
+        {viewerModel && (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="relative w-full max-w-5xl h-[85vh]">
+              
+              {/* Pulsante di chiusura fuori dal viewer, in alto */}
+              <button
+                onClick={closeViewer}
+                className="absolute -top-12 right-0 z-20 p-3 bg-black/60 hover:bg-black/80 rounded-full transition-colors backdrop-blur-sm shadow-lg"
+                title="Close viewer"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+
+              {/* Container del viewer */}
+              <div className="w-full h-full bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 overflow-hidden">
+                {/* ✅ 3D Viewer Content - OCCUPA TUTTO LO SPAZIO */}
+                <div className="w-full h-full">
+                  <Viewer3D 
+                    modelUrl={viewerModel}
+                    onModelDelete={() => {
+                      toast.info("Use the delete button in the history grid to remove models");
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

@@ -12,4 +12,5 @@ export type GeneratedModel = {
   output_model: string;
   model_name: string;
   created_at: string;
+  user: string; // Aggiungi questo campo come stringa
 };

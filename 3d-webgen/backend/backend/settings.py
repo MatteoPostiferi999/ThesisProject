@@ -13,27 +13,39 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from decouple import config
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# =====================================================
+# SECURITY CONFIGURATION
+# =====================================================
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default="django-insecure-^_mm@qbj)t7)ac(_0x==7gj@0h78@!nswtc!4l%1i=xzw!6859")
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# Hosts permessi - aggiunto .onrender.com per Render
+# Hosts permessi - più specifici in produzione
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
     '.onrender.com',
-    '.up.railway.app',        # ← Aggiungi questo
-    '129-146-48-166',
-    'tesi2025.netlify.app',   # ← E questo
+    '.up.railway.app',
+    '.render.com',
+    'tesi2025.netlify.app',
 ]
-# Application definition
+
+# Aggiungi il dominio di produzione se specificato
+PRODUCTION_HOST = config('PRODUCTION_HOST', default=None)
+if PRODUCTION_HOST:
+    ALLOWED_HOSTS.append(PRODUCTION_HOST)
+
+# =====================================================
+# APPLICATION DEFINITION
+# =====================================================
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -41,20 +53,22 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
+    "storages",
+    # Le tue app
     "core", 
     "users",
-    'rest_framework',
-    'rest_framework.authtoken',    
-    'corsheaders',
-    'jobs',
-    'models_history',
-    "storages"  
+    "jobs",
+    "models_history",
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # Spostato in cima
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Per servire file statici su Render
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -63,6 +77,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# =====================================================
+# REST FRAMEWORK & JWT CONFIGURATION
+# =====================================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -70,19 +87,94 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
 }
 
-# CORS - aggiunto Netlify e Render
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://0.0.0.0:8080",
-    config('FRONTEND_URL', default=''),  # URL Netlify dalla variabile d'ambiente
+SIMPLE_JWT = {
+    # ✅ Durata dei token ottimizzata
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),         # 1 ora
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),         # 7 giorni
+    
+    # ✅ Rotation per sicurezza
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    
+    # ✅ Configurazione algoritmo
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JSON_ENCODER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+    
+    # ✅ Claims
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+    
+    # ✅ Token types
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+    
+    # ✅ Claims personalizzati
+    'JTI_CLAIM': 'jti',
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=60),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
+
+# =====================================================
+# CORS CONFIGURATION - SICURA
+# =====================================================
+FRONTEND_URL = config('FRONTEND_URL', default=None)
+
+# CORS Origins - differenziati per ambiente
+if DEBUG:
+    # Sviluppo - permissivo
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",      # Vite dev server
+        "http://localhost:8080", 
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080",
+        "http://0.0.0.0:8080",
+    ]
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # Produzione - restrittivo
+    CORS_ALLOWED_ORIGINS = [
+        "https://tesi2025.netlify.app",
+    ]
+    CORS_ALLOW_ALL_ORIGINS = False
+
+# Aggiungi frontend URL se definita
+if FRONTEND_URL and FRONTEND_URL.strip():
+    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
+
+# Headers permessi per JWT
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
-# Per sviluppo - permetti tutti i CORS (SOLO in DEBUG)
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL', default=DEBUG, cast=bool)
+# CORS per credenziali
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "backend.urls"
 
@@ -104,15 +196,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.wsgi.application"
 
-# Database - Supabase con variabili d'ambiente
+# =====================================================
+# DATABASE CONFIGURATION - SICURA
+# =====================================================
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='postgres'),
-        'USER': config('DB_USER', default='postgres.muvnrrcpfsqimwzkjzpz'),
-        'PASSWORD': config('DB_PASSWORD', default='**Tfd4Pu?a*yAi!'),
-        'HOST': config('DB_HOST', default='aws-0-eu-west-3.pooler.supabase.com'),
-        'PORT': config('DB_PORT', default='6543'),
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT', default='5432'),
+        'OPTIONS': {
+            'sslmode': 'require',  # Sicurezza SSL per produzione
+        },
     }
 }
 
@@ -132,25 +229,102 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
+# =====================================================
+# SECURITY HEADERS (PRODUZIONE)
+# =====================================================
+if not DEBUG:
+    # HTTPS enforcement
+    SECURE_HSTS_SECONDS = 31536000  # 1 anno
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Secure cookies
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # Redirect HTTP to HTTPS
+    SECURE_SSL_REDIRECT = True
+    
+    # Content Security
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+
+# =====================================================
+# INTERNATIONALIZATION
+# =====================================================
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# Static files - configurazione per Render
+# =====================================================
+# STATIC FILES CONFIGURATION
+# =====================================================
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# WhiteNoise per servire file statici
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# =====================================================
+# LOGGING CONFIGURATION
+# =====================================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose' if DEBUG else 'simple',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'models_history': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'rest_framework_simplejwt': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console', 'file'] if not DEBUG else ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'file'] if not DEBUG else ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
 
-# CELERY CONFIG - Redis con variabili d'ambiente
-CELERY_BROKER_URL = config('REDIS_URL', default="redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412")
-CELERY_RESULT_BACKEND = config('REDIS_URL', default="redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412")
+# =====================================================
+# CELERY CONFIGURATION - SICURA
+# =====================================================
+CELERY_BROKER_URL = config('REDIS_URL')
+CELERY_RESULT_BACKEND = config('REDIS_URL')
 
 # Serializzazione
 CELERY_ACCEPT_CONTENT = ["json"]
@@ -182,22 +356,21 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_ENABLE_UTC = True
 
 # =====================================================
-# SUPABASE STORAGE CONFIGURATION - Con variabili d'ambiente
+# SUPABASE STORAGE CONFIGURATION - SICURA
 # =====================================================
-
-# Credenziali S3 per Supabase Storage
-AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default="608260a0a7cbc9e29a5b4211ed38c3a4")
-AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default="c0ad804d9b224b13e39b68610e06b3bd99c3b787426d38f07f4a0ab615eba20b")
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 
 # Configurazione endpoint e bucket
-AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default="https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/s3")
-AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default="project-files")
-AWS_S3_REGION_NAME = "us-east-1"
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_LOCATION = ""
 
 # URL pubblico per servire i file
-AWS_S3_CUSTOM_DOMAIN = f"muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}"
+SUPABASE_PROJECT_ID = config('SUPABASE_PROJECT_ID')
+AWS_S3_CUSTOM_DOMAIN = f"{SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}"
 
 # Configurazione per bucket pubblico
 AWS_DEFAULT_ACL = 'public-read'
@@ -214,13 +387,21 @@ STORAGES = {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",  # Cambiato per Render
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 
 # Supabase config
-SUPABASE_URL = config('SUPABASE_URL', default="https://muvnrrcpfsqimwzkjzpz.supabase.co")
-SUPABASE_ANON_KEY = config('SUPABASE_ANON_KEY', default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MjYyODcsImV4cCI6MjA2NTMwMjI4N30.kxJxG8WQ-COxeUd4nlYC5D2pVVjTuD44k0MOAPXmrRc")
+SUPABASE_URL = config('SUPABASE_URL')
+SUPABASE_ANON_KEY = config('SUPABASE_ANON_KEY')
 
 # URL per servire i media files
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# =====================================================
+# HEALTH CHECK ENDPOINT
+# =====================================================
+HEALTH_CHECK_URL = '/health/'

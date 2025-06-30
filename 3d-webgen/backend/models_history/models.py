@@ -20,5 +20,16 @@ class GeneratedModel(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ['user', 'input_image', 'output_model']
+        # Oppure usa constraints per maggiore controllo:
+        # constraints = [
+        #     models.UniqueConstraint(
+        #         fields=['user', 'input_image', 'output_model'],
+        #         name='unique_user_model'
+        #     )
+        # ]
+    
+
     def __str__(self):
          return f"{self.model_name} by {self.user.username}"

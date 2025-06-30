@@ -1,8 +1,12 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db import IntegrityError
 from .models import GeneratedModel
 from .serializers import GeneratedModelSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GeneratedModelViewSet(viewsets.ModelViewSet):
     """
@@ -25,12 +29,16 @@ class GeneratedModelViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
-        # Ritorna solo i record dell’utente loggato
+        # Ritorna solo i record dell'utente loggato
         return GeneratedModel.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Associa sempre l’utente corrente
-        serializer.save(user=self.request.user)
+        # Associa sempre l'utente corrente
+        try:
+            serializer.save(user=self.request.user)
+        except IntegrityError:
+            # Gestisce duplicati che potrebbero arrivare da altre chiamate
+            logger.warning(f"⚠️ Duplicato ignorato in perform_create per user {self.request.user.id}")
 
     @action(detail=False, methods=['get'], url_path='my-models')
     def my_models(self, request):
@@ -51,10 +59,29 @@ class GeneratedModelViewSet(viewsets.ModelViewSet):
         Endpoint dedicato per flussi speciali (e.g. admin vs free user).
         """
         user = request.user
+        data = request.data
 
-        # 1) Esempio: quota max = 8 per utenti free
+        # ✅ CONTROLLA DUPLICATI PRIMA DI SALVARE
+        existing_model = GeneratedModel.objects.filter(
+            user=user,
+            input_image=data.get('input_image'),
+            output_model=data.get('output_model')
+        ).first()
+
+        if existing_model:
+            logger.info(f"ℹ️ Modello già esistente per user {user.id}")
+            return Response(
+                {
+                    'detail': 'Modello già esistente nella cronologia.',
+                    'model': self.get_serializer(existing_model).data
+                },
+                status=status.HTTP_200_OK
+            )
+
+        # 1) Controllo quota per utenti free
         if not user.is_staff:
-            if GeneratedModel.objects.filter(user=user).count() >= 8:
+            current_count = GeneratedModel.objects.filter(user=user).count()
+            if current_count >= 8:
                 return Response(
                     {'detail': 'Hai già raggiunto il limite di 8 modelli.'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -64,16 +91,36 @@ class GeneratedModelViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # 3) Logica differenziata
-        if user.is_staff:
-            # …magari un campo extra, o bypass quota…
-            instance = serializer.save(user=user, approved=True)
-        else:
-            # utente “free”
-            instance = serializer.save(user=user)
+        try:
+            # 3) Logica differenziata per admin/user
+            if user.is_staff:
+                instance = serializer.save(user=user, approved=True)
+                logger.info(f"✅ Modello salvato (admin) per user {user.id}")
+            else:
+                instance = serializer.save(user=user)
+                logger.info(f"✅ Modello salvato (free) per user {user.id}")
 
-        # 4) Risposta
-        return Response(
-            self.get_serializer(instance).data,
-            status=status.HTTP_201_CREATED
-        )
+            # 4) Risposta di successo
+            return Response(
+                self.get_serializer(instance).data,
+                status=status.HTTP_201_CREATED
+            )
+            
+        except IntegrityError as e:
+            # ✅ BACKUP: Gestisce duplicati che sfuggono al controllo preventivo
+            logger.warning(f"⚠️ IntegrityError in save_model per user {user.id}: {e}")
+            
+            # Trova il modello esistente
+            existing = GeneratedModel.objects.filter(
+                user=user,
+                input_image=data.get('input_image'),
+                output_model=data.get('output_model')
+            ).first()
+            
+            return Response(
+                {
+                    'detail': 'Modello già esistente nella cronologia.',
+                    'model': self.get_serializer(existing).data if existing else None
+                },
+                status=status.HTTP_200_OK
+            )
