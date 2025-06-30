@@ -129,12 +129,11 @@ const LoginForm = () => {
           </div>
           <p className="text-gray-600 dark:text-gray-400">
             Ready for your first 3D prototype?
-
           </p>
         </div>
 
         {/* 📝 Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
           
           {/* 👤 Username Field */}
           <div className="space-y-2">
@@ -153,6 +152,7 @@ const LoginForm = () => {
                 onChange={handleChange}
                 onFocus={() => setFocusedField('username')}
                 onBlur={() => setFocusedField(null)}
+                autoComplete="off"
                 className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 transition-all duration-300 bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 ${
                   errors.username
                     ? "border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500/20"
@@ -189,6 +189,7 @@ const LoginForm = () => {
                 onChange={handleChange}
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
+                autoComplete="new-password"
                 className={`w-full pl-12 pr-12 py-4 rounded-2xl border-2 transition-all duration-300 bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 ${
                   errors.password
                     ? "border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500/20"

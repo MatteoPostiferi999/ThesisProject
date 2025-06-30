@@ -234,17 +234,17 @@ AUTH_PASSWORD_VALIDATORS = [
 # SECURITY HEADERS (PRODUZIONE)
 # =====================================================
 if not DEBUG:
-    # HTTPS enforcement
-    SECURE_HSTS_SECONDS = 31536000  # 1 anno
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    # HTTPS enforcement - COMMENTATO per Railway
+    # SECURE_HSTS_SECONDS = 31536000  # 1 anno
+    # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # SECURE_HSTS_PRELOAD = True
     
-    # Secure cookies
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    # Secure cookies - COMMENTATO per Railway
+    # SESSION_COOKIE_SECURE = True
+    # CSRF_COOKIE_SECURE = True
     
-    # Redirect HTTP to HTTPS
-    SECURE_SSL_REDIRECT = True
+    # Redirect HTTP to HTTPS - COMMENTATO per Railway
+    # SECURE_SSL_REDIRECT = True
     
     # Content Security
     SECURE_CONTENT_TYPE_NOSNIFF = True
