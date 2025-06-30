@@ -22,10 +22,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY CONFIGURATION
 # =====================================================
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+# Default solo per sviluppo locale
+SECRET_KEY = config('SECRET_KEY', default="django-insecure-^_mm@qbj)t7)ac(_0x==7gj@0h78@!nswtc!4l%1i=xzw!6859" if config('DEBUG', default=True, cast=bool) else None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 # Hosts permessi - più specifici in produzione
 ALLOWED_HOSTS = [
@@ -202,13 +203,13 @@ WSGI_APPLICATION = "backend.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT', default='5432'),
+        'NAME': config('DB_NAME', default='postgres' if DEBUG else None),
+        'USER': config('DB_USER', default='postgres.muvnrrcpfsqimwzkjzpz' if DEBUG else None),
+        'PASSWORD': config('DB_PASSWORD', default='**Tfd4Pu?a*yAi!' if DEBUG else None),
+        'HOST': config('DB_HOST', default='aws-0-eu-west-3.pooler.supabase.com' if DEBUG else None),
+        'PORT': config('DB_PORT', default='6543'),
         'OPTIONS': {
-            'sslmode': 'require',  # Sicurezza SSL per produzione
+            'sslmode': 'require' if not DEBUG else 'prefer',  # SSL solo in produzione
         },
     }
 }
@@ -286,11 +287,6 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose' if DEBUG else 'simple',
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
-            'formatter': 'verbose',
-        },
     },
     'loggers': {
         'models_history': {
@@ -304,12 +300,12 @@ LOGGING = {
             'propagate': False,
         },
         'django.security': {
-            'handlers': ['console', 'file'] if not DEBUG else ['console'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
         'django.request': {
-            'handlers': ['console', 'file'] if not DEBUG else ['console'],
+            'handlers': ['console'],
             'level': 'ERROR',
             'propagate': False,
         },
@@ -323,8 +319,8 @@ LOGGING = {
 # =====================================================
 # CELERY CONFIGURATION - SICURA
 # =====================================================
-CELERY_BROKER_URL = config('REDIS_URL')
-CELERY_RESULT_BACKEND = config('REDIS_URL')
+CELERY_BROKER_URL = config('REDIS_URL', default="redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412" if DEBUG else None)
+CELERY_RESULT_BACKEND = config('REDIS_URL', default="redis://default:CItpjCfWaaRXFjLClIEkXeKrfVdAPWKM@trolley.proxy.rlwy.net:31412" if DEBUG else None)
 
 # Serializzazione
 CELERY_ACCEPT_CONTENT = ["json"]
@@ -358,18 +354,18 @@ CELERY_ENABLE_UTC = True
 # =====================================================
 # SUPABASE STORAGE CONFIGURATION - SICURA
 # =====================================================
-AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default="608260a0a7cbc9e29a5b4211ed38c3a4" if DEBUG else None)
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default="c0ad804d9b224b13e39b68610e06b3bd99c3b787426d38f07f4a0ab615eba20b" if DEBUG else None)
 
 # Configurazione endpoint e bucket
-AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
-AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default="https://muvnrrcpfsqimwzkjzpz.supabase.co/storage/v1/s3" if DEBUG else None)
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default="project-files" if DEBUG else None)
 AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_LOCATION = ""
 
 # URL pubblico per servire i file
-SUPABASE_PROJECT_ID = config('SUPABASE_PROJECT_ID')
+SUPABASE_PROJECT_ID = config('SUPABASE_PROJECT_ID', default="muvnrrcpfsqimwzkjzpz" if DEBUG else None)
 AWS_S3_CUSTOM_DOMAIN = f"{SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/{AWS_STORAGE_BUCKET_NAME}"
 
 # Configurazione per bucket pubblico
@@ -392,8 +388,8 @@ STORAGES = {
 }
 
 # Supabase config
-SUPABASE_URL = config('SUPABASE_URL')
-SUPABASE_ANON_KEY = config('SUPABASE_ANON_KEY')
+SUPABASE_URL = config('SUPABASE_URL', default="https://muvnrrcpfsqimwzkjzpz.supabase.co" if DEBUG else None)
+SUPABASE_ANON_KEY = config('SUPABASE_ANON_KEY', default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11dm5ycmNwZnNxaW13emtqenB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3MjYyODcsImV4cCI6MjA2NTMwMjI4N30.kxJxG8WQ-COxeUd4nlYC5D2pVVjTuD44k0MOAPXmrRc" if DEBUG else None)
 
 # URL per servire i media files
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
