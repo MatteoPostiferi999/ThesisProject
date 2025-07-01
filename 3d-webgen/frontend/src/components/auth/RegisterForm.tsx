@@ -12,7 +12,8 @@ import {
   Zap,
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  Mail
 } from "lucide-react";
 
 type RegisterFormProps = {
@@ -22,6 +23,7 @@ type RegisterFormProps = {
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const [formData, setFormData] = useState({
     username: "",
+    email: "",
     password: "",
   });
 
@@ -30,24 +32,37 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ✅ Email validation function
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   // ✅ FUNZIONI PER FORZARE I MESSAGGI IN INGLESE
   const handleInvalid = (e: React.InvalidEvent<HTMLInputElement>) => {
     e.preventDefault();
     const field = e.target.name;
+    const value = e.target.value.trim();
     
-    if (!e.target.value.trim()) {
+    if (!value) {
       e.target.setCustomValidity('Please fill out this field');
       setErrors(prev => ({ 
         ...prev, 
         [field]: 'Please fill out this field' 
       }));
-    } else if (field === 'username' && e.target.value.length < 3) {
+    } else if (field === 'username' && value.length < 3) {
       e.target.setCustomValidity('Username must be at least 3 characters');
       setErrors(prev => ({ 
         ...prev, 
         [field]: 'Username must be at least 3 characters' 
       }));
-    } else if (field === 'password' && e.target.value.length < 3) {
+    } else if (field === 'email' && !isValidEmail(value)) {
+      e.target.setCustomValidity('Please enter a valid email address');
+      setErrors(prev => ({ 
+        ...prev, 
+        [field]: 'Please enter a valid email address' 
+      }));
+    } else if (field === 'password' && value.length < 3) {
       e.target.setCustomValidity('Password must be at least 3 characters');
       setErrors(prev => ({ 
         ...prev, 
@@ -75,14 +90,21 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    // Simple username validation
+    // Username validation
     if (!formData.username.trim()) {
       newErrors.username = "Please fill out this field";
     } else if (formData.username.length < 3) {
       newErrors.username = "Username must be at least 3 characters";
     }
     
-    // Simple password validation
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = "Please fill out this field";
+    } else if (!isValidEmail(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    // Password validation
     if (!formData.password) {
       newErrors.password = "Please fill out this field";
     } else if (formData.password.length < 3) {
@@ -108,6 +130,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       
       const data = await registerUser({
         username: formData.username,
+        email: formData.email,
         password: formData.password,
       });
 
@@ -126,6 +149,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       
       // Better error handling
       const errorMessage = error.response?.data?.username?.[0] ||
+                          error.response?.data?.email?.[0] ||
                           error.response?.data?.password?.[0] ||
                           error.response?.data?.detail ||
                           "Registration failed. Please try again.";
@@ -137,6 +161,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       // Set field-specific errors
       if (error.response?.data?.username) {
         setErrors(prev => ({ ...prev, username: error.response.data.username[0] }));
+      }
+      if (error.response?.data?.email) {
+        setErrors(prev => ({ ...prev, email: error.response.data.email[0] }));
       }
       if (error.response?.data?.password) {
         setErrors(prev => ({ ...prev, password: error.response.data.password[0] }));
@@ -151,9 +178,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
     if (hasError) return <AlertCircle className="h-5 w-5 text-red-500" />;
     if (focusedField === field) return <CheckCircle2 className="h-5 w-5 text-green-500" />;
     
-    return field === 'username' ? 
-      <User className="h-5 w-5 text-gray-400" /> : 
-      <Lock className="h-5 w-5 text-gray-400" />;
+    switch (field) {
+      case 'username':
+        return <User className="h-5 w-5 text-gray-400" />;
+      case 'email':
+        return <Mail className="h-5 w-5 text-gray-400" />;
+      case 'password':
+        return <Lock className="h-5 w-5 text-gray-400" />;
+      default:
+        return <User className="h-5 w-5 text-gray-400" />;
+    }
   };
 
   return (
@@ -217,6 +251,44 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
               <p className="text-red-500 text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
                 {errors.username}
+              </p>
+            )}
+          </div>
+
+          {/* 📧 Email Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Email Address *
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                {getFieldIcon('email', !!errors.email)}
+              </div>
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter your email address"
+                value={formData.email}
+                onInput={handleInput}
+                onInvalid={handleInvalid}
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
+                autoComplete="off"
+                className={`w-full pl-12 pr-4 py-4 rounded-2xl border-2 transition-all duration-300 bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 ${
+                  errors.email
+                    ? "border-red-300 dark:border-red-600 focus:border-red-500 focus:ring-red-500/20"
+                    : focusedField === 'email'
+                    ? "border-purple-400 dark:border-purple-500 focus:border-purple-500 focus:ring-purple-500/20 shadow-lg"
+                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                } focus:outline-none focus:ring-4`}
+                required
+                disabled={loading}
+              />
+            </div>
+            {errors.email && (
+              <p className="text-red-500 text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                {errors.email}
               </p>
             )}
           </div>

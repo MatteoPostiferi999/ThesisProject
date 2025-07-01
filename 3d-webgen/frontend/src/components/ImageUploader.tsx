@@ -280,7 +280,7 @@ const ImageUploader = ({
       
       <div className="relative bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-8 shadow-2xl">
         
-        {/* Header Section */}
+        {/* Header Section - SEMPLIFICATO */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
@@ -291,12 +291,7 @@ const ImageUploader = ({
             </h2>
           </div>
           
-          {/* RIMOSSA ICONA SPARKLES DAL BADGE */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full border border-blue-200 dark:border-blue-700">
-            <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Model: <span className="font-bold">{getModelName(selectedModel)}</span>
-            </span>
-          </div>
+          {/* RIMOSSO IL BADGE DEL MODELLO */}
         </div>
 
         {/* Upload Area */}

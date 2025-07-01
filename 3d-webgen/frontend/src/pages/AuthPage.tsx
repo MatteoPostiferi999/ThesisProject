@@ -21,11 +21,7 @@ const AuthPage = () => {
     { icon: Star, label: "Pro Tools (Soon)" }
   ];
 
-  const statusPills = [
-    { color: "teal", label: "Supports .PNG/.JPG/.SVG" },
-    { color: "indigo", label: "Browser-Only" },
-    { color: "purple", label: "Research-Driven" }
-  ];
+  
 
   return (
     <div className="min-h-screen relative overflow-y-auto">
@@ -134,17 +130,7 @@ const AuthPage = () => {
             ))}
           </div>
 
-          {/* 📊 Project Status */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-4 px-4 py-2 bg-black/20 backdrop-blur-sm rounded-full">
-              {statusPills.map((pill, i) => (
-                <span key={i} className="flex items-center gap-1">
-                  <div className={`w-2 h-2 bg-${pill.color}-400 rounded-full animate-pulse`} />
-                  <span className="text-white/80 text-[0.65rem]">{pill.label}</span>
-                </span>
-              ))}
-            </div>
-          </div>
+      
 
         </div>
       </div>

@@ -214,6 +214,11 @@ DATABASES = {
     }
 }
 
+
+# settings.py
+# settings.py
+AUTH_USER_MODEL = 'users.CustomUser'  # Sostituisci 'users' con il nome reale
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {

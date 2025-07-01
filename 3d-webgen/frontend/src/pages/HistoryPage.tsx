@@ -370,7 +370,7 @@ const HistoryPage = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {models.map((model) => (
               <Card
                 key={model.id}
@@ -386,54 +386,53 @@ const HistoryPage = () => {
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </button>
 
-                {/* Image */}
-                <div className="relative overflow-hidden">
+                {/* ✅ IMPROVED: Better Image Container */}
+                <div className="relative overflow-hidden aspect-square">
                   <img
                     src={model.input_image}
-                    alt="Input"
-                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                    alt="Input Image"
+                    className="w-full h-full object-contain bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => {
+                      // Fallback per immagini non trovate
+                      e.currentTarget.style.objectFit = 'cover';
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #f3f4f6, #e5e7eb)';
+                    }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  {/* Overlay con gradiente più sottile */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  {/* Badge modello nell'angolo */}
+                  <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg">
+                    <span className="text-white text-xs font-medium">
+                      {formatModelName(model.model_name)}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Content */}
+                {/* ✅ IMPROVED: Compact Content Section */}
                 <div className="p-4 space-y-3">
                   
-                  {/* User Info */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-blue-500" />
-                      <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
-                        {model.user || 'Unknown User'}
+                  {/* User and Date Row */}
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1">
+                      <User className="w-3 h-3 text-blue-500" />
+                      <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md text-xs font-medium">
+                        {model.user || 'Unknown'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-purple-500" />
-                      <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-xs font-medium">
-                        {formatModelName(model.model_name)}
-                      </span>
+                    <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                      <Calendar className="w-3 h-3" />
+                      <span>{new Date(model.created_at).toLocaleDateString()}</span>
                     </div>
-                  </div>
-
-                  {/* Date */}
-                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {new Date(model.created_at).toLocaleDateString()} at{" "}
-                      {new Date(model.created_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
                   </div>
 
                   {/* Action Button */}
                   <button
                     onClick={() => handleView3D(model.output_model)}
-                    className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
                   >
                     <Eye className="w-4 h-4" />
-                    View 3D Model
+                    <span>View 3D Model</span>
                   </button>
                 </div>
               </Card>

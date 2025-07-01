@@ -5,7 +5,6 @@ import { useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three-stdlib";
 import * as THREE from "three";
 import ModelControls from "@/components/viewer/ModelControls";
-// ✅ IMPORTA IL TUO NoModelPlaceholder (modifica il path secondo la tua struttura)
 import NoModelPlaceholder from "@/components/viewer/NoModelPlaceholder"; // ← Cambia questo path con quello corretto
 
 import { 

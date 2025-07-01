@@ -1,7 +1,7 @@
 import { 
   Upload, 
   Sparkles, 
-  Image as ImageIcon,
+  Image,
   Wand2,
   ArrowRight,
   Zap,
@@ -13,50 +13,16 @@ import { useState, useEffect } from "react";
 interface NoModelPlaceholderProps {
   modelUrl?: string;
   onModelDelete?: () => void;
-  isProcessing?: boolean; 
-  processingStatus?: string; 
+  isProcessing?: boolean; // AGGIUNTA PROP PER LOADING
+  processingStatus?: string; // AGGIUNTA PROP PER STATUS
 }
 
 const NoModelPlaceholder: React.FC<NoModelPlaceholderProps> = ({ 
   modelUrl, 
   onModelDelete,
-  isProcessing = false, 
-  processingStatus = "Generating 3D Model..." 
+  isProcessing = false, // DEFAULT FALSE
+  processingStatus = "Generating 3D Model..." // DEFAULT STATUS
 }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-
-  const steps = [
-    {
-      icon: Upload,
-      title: "Upload Image",
-      color: "text-blue-500",
-      bgColor: "bg-blue-100 dark:bg-blue-900/30"
-    },
-    {
-      icon: Wand2,
-      title: "AI Processing",
-      color: "text-purple-500",
-      bgColor: "bg-purple-100 dark:bg-purple-900/30"
-    },
-    {
-      icon: Sparkles,
-      title: "3D Model",
-      color: "text-green-500",
-      bgColor: "bg-green-100 dark:bg-green-900/30"
-    }
-  ];
-
-  // Cycle through steps automatically (solo se non sta processando)
-  useEffect(() => {
-    if (!isProcessing) {
-      const interval = setInterval(() => {
-        setCurrentStep((prev) => (prev + 1) % steps.length);
-      }, 2500);
-      
-      return () => clearInterval(interval);
-    }
-  }, [isProcessing]);
-
   // Se sta processando, mostra solo lo spinner pulito
   if (isProcessing) {
     return (
@@ -121,7 +87,7 @@ const NoModelPlaceholder: React.FC<NoModelPlaceholderProps> = ({
         <div className="relative mb-6">
           <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center shadow-lg">
             <div className="relative">
-              <ImageIcon className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+              <Image className="h-10 w-10 text-gray-400 dark:text-gray-500" />
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                 <Zap className="h-2.5 w-2.5 text-white" />
               </div>
@@ -132,51 +98,11 @@ const NoModelPlaceholder: React.FC<NoModelPlaceholderProps> = ({
         {/* Main Content */}
         <div className="space-y-3 mb-6">
           <h3 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-            2D to 3D Generation
+            3D Model Viewer
           </h3>
           <p className="text-gray-600 dark:text-gray-400 max-w-sm text-sm">
-            Upload an image to generate a 3D model using AI-powered reconstruction techniques.
+            Your generated 3D model will appear here. Upload an image to start the generation process.
           </p>
-        </div>
-
-        {/* Process Steps */}
-        <div className="flex items-center gap-6 mb-6">
-          {steps.map((step, index) => (
-            <div key={index} className="flex items-center gap-3">
-              
-              {/* Step Icon */}
-              <div className={`relative transition-all duration-500 ${
-                currentStep === index ? 'scale-110' : 'scale-90 opacity-60'
-              }`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
-                  currentStep === index ? step.bgColor : 'bg-gray-100 dark:bg-gray-800'
-                }`}>
-                  <step.icon className={`h-5 w-5 transition-colors duration-500 ${
-                    currentStep === index ? step.color : 'text-gray-400'
-                  }`} />
-                </div>
-                
-                {/* Active Indicator */}
-                {currentStep === index && (
-                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl blur opacity-30 animate-pulse" />
-                )}
-              </div>
-
-              {/* Step Text */}
-              <div className={`transition-all duration-500 ${
-                currentStep === index ? 'opacity-100' : 'opacity-50'
-              }`}>
-                <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                  {step.title}
-                </div>
-              </div>
-
-              {/* Arrow Between Steps */}
-              {index < steps.length - 1 && (
-                <ArrowRight className="h-3 w-3 text-gray-300 dark:text-gray-600 mx-2" />
-              )}
-            </div>
-          ))}
         </div>
 
         {/* Action Hint */}
