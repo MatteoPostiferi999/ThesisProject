@@ -39,8 +39,9 @@ const Hero = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("refreshToken");
+    // CORRETTO: sessionStorage invece di localStorage
+    sessionStorage.removeItem("authToken");
+    sessionStorage.removeItem("refreshToken");
     navigate("/auth");
   };
 

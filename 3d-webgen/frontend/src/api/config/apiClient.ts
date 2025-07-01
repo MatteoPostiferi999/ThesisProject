@@ -2,16 +2,16 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://129.146.48.166:8000';
 
-// 🔐 Gestione token
-const getAccessToken = () => localStorage.getItem('accessToken');
-const getRefreshToken = () => localStorage.getItem('refreshToken');
+// 🔐 Gestione token - CAMBIATO A sessionStorage e authToken
+const getAccessToken = () => sessionStorage.getItem('authToken');
+const getRefreshToken = () => sessionStorage.getItem('refreshToken');
 const setTokens = (accessToken: string, refreshToken: string) => {
-  localStorage.setItem('accessToken', accessToken);
-  localStorage.setItem('refreshToken', refreshToken);
+  sessionStorage.setItem('authToken', accessToken);
+  sessionStorage.setItem('refreshToken', refreshToken);
 };
 const clearTokens = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+  sessionStorage.removeItem('authToken');
+  sessionStorage.removeItem('refreshToken');
 };
 
 // 🕐 Utility per verificare scadenza token
@@ -48,9 +48,9 @@ const refreshAccessToken = async () => {
     
     console.log('✅ Token rinnovato con successo');
     
-    // Se il backend restituisce anche un nuovo refresh token, aggiornalo
+    // Se il backend restituisce anche un nuovo refresh token, aggiornalo - CAMBIATO
     if (response.data.refresh) {
-      localStorage.setItem('refreshToken', response.data.refresh);
+      sessionStorage.setItem('refreshToken', response.data.refresh);
     }
     
     return response.data.access;
@@ -80,7 +80,7 @@ apiClient.interceptors.request.use(
         try {
           console.log('🔄 Refresh preventivo del token...');
           const newToken = await refreshAccessToken();
-          localStorage.setItem('accessToken', newToken);
+          sessionStorage.setItem('authToken', newToken); // CAMBIATO: authToken
           config.headers.Authorization = `Bearer ${newToken}`;
         } catch (error) {
           console.log('❌ Refresh preventivo fallito, procedo con token esistente');
@@ -109,7 +109,7 @@ apiClient.interceptors.response.use(
       
       try {
         const newAccessToken = await refreshAccessToken();
-        localStorage.setItem('accessToken', newAccessToken);
+        sessionStorage.setItem('authToken', newAccessToken); // CAMBIATO: authToken
         
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return apiClient(originalRequest);
@@ -170,7 +170,7 @@ export const initializeAuth = async (): Promise<boolean> => {
     if (isTokenExpiringSoon(token, 1)) { // Rinnova se scade entro 1 minuto
       console.log('🔄 Inizializzazione: rinnovo token...');
       const newToken = await refreshAccessToken();
-      localStorage.setItem('accessToken', newToken);
+      sessionStorage.setItem('authToken', newToken); // CAMBIATO: authToken
     }
     return true;
   } catch (error) {

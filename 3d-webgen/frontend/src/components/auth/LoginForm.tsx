@@ -109,11 +109,10 @@ const LoginForm = () => {
       
       const data = await loginUser(credentials);
       console.log("📦 Login response:", data);
-      
-      localStorage.setItem("authToken", data.access);
-      localStorage.setItem("refreshToken", data.refresh);
-      console.log("💾 Tokens saved to localStorage");
-      
+      sessionStorage.setItem("authToken", data.access);
+      sessionStorage.setItem("refreshToken", data.refresh);
+      console.log("💾 Tokens saved to sessionStorage");
+
       toast.dismiss("login-toast");
       toast.success("🎉 Welcome back!");
       

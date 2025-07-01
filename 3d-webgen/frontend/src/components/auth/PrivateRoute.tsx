@@ -13,8 +13,9 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
 
   useEffect(() => {
     const validateAuth = async () => {
-      const token = localStorage.getItem("authToken");
-      const refreshToken = localStorage.getItem("refreshToken");
+      // CAMBIATO: sessionStorage invece di localStorage
+      const token = sessionStorage.getItem("authToken");
+      const refreshToken = sessionStorage.getItem("refreshToken");
 
       // Quick validation
       if (!token) {
@@ -36,9 +37,9 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
         console.error("Auth validation error:", error);
         setIsAuthenticated(false);
         
-        // Clear invalid tokens
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("refreshToken");
+        // CAMBIATO: Clear invalid tokens from sessionStorage
+        sessionStorage.removeItem("authToken");
+        sessionStorage.removeItem("refreshToken");
       } finally {
         setIsValidating(false);
       }
