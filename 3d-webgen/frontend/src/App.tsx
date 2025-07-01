@@ -15,13 +15,13 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [authInitialized, setAuthInitialized] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // ✅ AGGIUNGI QUESTO
+  const [isAuthenticated, setIsAuthenticated] = useState(false); 
 
   useEffect(() => {
     const initAuth = async () => {
       console.log('🚀 Inizializzazione autenticazione...');
-      const authValid = await initializeAuth(); // ✅ CATTURA IL RISULTATO
-      setIsAuthenticated(authValid); // ✅ SALVA LO STATO AUTH
+      const authValid = await initializeAuth();
+      setIsAuthenticated(authValid);
       setAuthInitialized(true);
     };
     

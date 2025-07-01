@@ -75,7 +75,6 @@ const ImageUploader = ({
             return;
           }
 
-          // AGGIUNTA: Verifica che il file sia effettivamente accessibile
           try {
             console.log("🔍 Checking file accessibility:", mesh_url);
             const fileResponse = await fetch(mesh_url, { method: 'HEAD' });
@@ -179,6 +178,9 @@ const ImageUploader = ({
       toast.error("Please upload an image first.");
       return;
     }
+
+    // ✅ CHIAMA onGenerate() ALL'INIZIO per attivare lo spinner nel ModelWorkflow
+    onGenerate();
 
     setStatus("uploading");
     setHasStartedGeneration(true);

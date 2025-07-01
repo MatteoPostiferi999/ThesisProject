@@ -29,6 +29,32 @@ const LoginForm = () => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<{username?: string; password?: string}>({});
 
+  // ✅ FUNZIONI PER FORZARE I MESSAGGI IN INGLESE
+  const handleInvalid = (e: React.InvalidEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const field = e.target.name;
+    
+    if (!e.target.value.trim()) {
+      e.target.setCustomValidity('Please fill out this field');
+      setErrors(prev => ({ 
+        ...prev, 
+        [field]: 'Please fill out this field' 
+      }));
+    } else if (field === 'username' && e.target.value.length < 3) {
+      e.target.setCustomValidity('Username must be at least 3 characters');
+      setErrors(prev => ({ 
+        ...prev, 
+        [field]: 'Username must be at least 3 characters' 
+      }));
+    }
+  };
+
+  const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
+    e.currentTarget.setCustomValidity('');
+    // Continua con la logica normale
+    handleChange(e as React.ChangeEvent<HTMLInputElement>);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCredentials({ ...credentials, [name]: value });
@@ -43,15 +69,15 @@ const LoginForm = () => {
     const newErrors: {username?: string; password?: string} = {};
     
     if (!credentials.username.trim()) {
-      newErrors.username = "Username is required";
+      newErrors.username = "Please fill out this field";
     } else if (credentials.username.length < 3) {
       newErrors.username = "Username must be at least 3 characters";
     }
     
     if (!credentials.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = "Please fill out this field";
     }
-    // Rimosso il controllo sulla lunghezza minima della password
+    // Rimosso il controllo sulla lunghezza minima della password per il login
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -133,7 +159,7 @@ const LoginForm = () => {
         </div>
 
         {/* 📝 Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" noValidate>
           
           {/* 👤 Username Field */}
           <div className="space-y-2">
@@ -149,7 +175,8 @@ const LoginForm = () => {
                 name="username"
                 placeholder="Enter your username"
                 value={credentials.username}
-                onChange={handleChange}
+                onInput={handleInput}
+                onInvalid={handleInvalid}
                 onFocus={() => setFocusedField('username')}
                 onBlur={() => setFocusedField(null)}
                 autoComplete="off"
@@ -162,6 +189,7 @@ const LoginForm = () => {
                 } focus:outline-none focus:ring-4`}
                 required
                 disabled={isLoading}
+                minLength={3}
               />
             </div>
             {errors.username && (
@@ -186,7 +214,8 @@ const LoginForm = () => {
                 name="password"
                 placeholder="Enter your password"
                 value={credentials.password}
-                onChange={handleChange}
+                onInput={handleInput}
+                onInvalid={handleInvalid}
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
                 autoComplete="new-password"

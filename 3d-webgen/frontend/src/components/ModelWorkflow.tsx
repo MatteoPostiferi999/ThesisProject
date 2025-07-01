@@ -22,6 +22,7 @@ const ModelWorkflow = () => {
   useEffect(() => {
     if (model3DUrl) {
       setCurrentStep('view');
+      setIsProcessing(false); // ✅ Stop processing when model is ready
     } else if (uploadedImage) {
       setCurrentStep('generate');
     } else {
@@ -32,21 +33,37 @@ const ModelWorkflow = () => {
   const handleImageUploaded = (imageUrl: string) => {
     setUploadedImage(imageUrl);
     setModel3DUrl(null); // Reset 3D model when new image is uploaded
+    setIsProcessing(false); // ✅ Reset processing state
   };
 
   const handleImageDelete = () => {
     setUploadedImage(null);
     setModel3DUrl(null);
+    setIsProcessing(false); // ✅ Reset processing state
   };
 
   const handleGenerate = () => {
-    setIsProcessing(true);
-    // The processing will be handled by ImageUploader component
+    console.log("🚀 Starting generation process...");
+    setIsProcessing(true); // ✅ Start processing immediately
+    // The actual processing will be handled by ImageUploader component
   };
 
   const handleModelDelete = () => {
     setModel3DUrl(null);
     setIsProcessing(false);
+  };
+
+  // ✅ Handle when generation is complete
+  const handleGenerationComplete = (modelUrl: string) => {
+    console.log("✅ Generation complete, setting model URL:", modelUrl);
+    setModel3DUrl(modelUrl);
+    setIsProcessing(false); // ✅ Stop processing
+  };
+
+  // ✅ Handle when generation fails
+  const handleGenerationError = () => {
+    console.log("❌ Generation failed");
+    setIsProcessing(false); // ✅ Stop processing on error
   };
 
   return (
@@ -82,7 +99,7 @@ const ModelWorkflow = () => {
                 onImageDelete={handleImageDelete}
                 uploadedImage={uploadedImage}
                 selectedModel={selectedModel}
-                setModelUrl={setModel3DUrl}
+                setModelUrl={handleGenerationComplete} // ✅ Use the new handler
                 onGenerate={handleGenerate}
                 isProcessing={isProcessing}
               />
@@ -104,6 +121,8 @@ const ModelWorkflow = () => {
                   <Viewer3D 
                     modelUrl={model3DUrl} 
                     onModelDelete={handleModelDelete}
+                    isProcessing={isProcessing} // ✅ Pass processing state to Viewer3D too
+                    processingStatus="Generating your 3D model..."
                   />
                   {/* Success Badge */}
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg animate-pulse">
@@ -128,7 +147,11 @@ const ModelWorkflow = () => {
                   </div>
                 </div>
               ) : (
-                <NoModelPlaceholder />
+                // ✅ FIXED: Pass isProcessing prop to NoModelPlaceholder
+                <NoModelPlaceholder 
+                  isProcessing={isProcessing}
+                  processingStatus="Generating your 3D model..."
+                />
               )}
             </div>
           </div>

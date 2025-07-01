@@ -67,7 +67,7 @@ const AuthPage = () => {
               </div>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
-              {mode === "register" ? "AI-Driven 2D to 3D Prototyping" : "Welcome Back"}
+              {mode === "register" ? "AI Assisted Design: 2D to 3D Reconstruction for Rapid Prototyping" : "Welcome Back"}
             </h1>
             <p className="text-blue-200 text-base">
               {mode === "register" 

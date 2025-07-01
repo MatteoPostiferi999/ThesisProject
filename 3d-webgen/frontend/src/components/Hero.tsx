@@ -107,7 +107,7 @@ const Hero = () => {
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse" />
                 </div>
                 <span className="text-blue-200 font-medium text-lg">
-                  🚀 Next-Gen AI Technology
+                  Next-Gen AI Technology
                 </span>
               </div>
 
@@ -127,7 +127,7 @@ const Hero = () => {
               <p className={`text-xl md:text-2xl mb-10 text-slate-300 leading-relaxed transition-all duration-700 delay-400 ${
                 isVisible ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
               }`}>
-                Upload any 2D image and watch our advanced AI transform it into a 3D model. 
+                Upload any 2D image and watch our AI transform it into a 3D model. 
                 <span className="text-blue-300 font-semibold"> No experience required.</span>
               </p>
 
@@ -210,13 +210,10 @@ const Hero = () => {
                     ))}
                   </div>
 
-                  {/* ⚡ Magic Wand */}
-                  <div className="absolute top-4 right-4">
-                    <Wand2 className="h-8 w-8 text-yellow-400 animate-pulse" />
-                  </div>
+                  
                 </div>
 
-                {/* ✨ Floating Elements */}
+                {/*  Floating Elements */}
                 <div className="absolute -top-6 -left-6 w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-20 animate-pulse" />
                 <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-gradient-to-r from-pink-400 to-red-500 rounded-full opacity-30 animate-bounce" />
                 <div className="absolute top-1/2 -left-8 w-6 h-6 bg-gradient-to-r from-green-400 to-blue-500 rounded-full opacity-25 animate-ping" />
@@ -228,7 +225,7 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* 🎯 Scroll Indicator */}
+      {/*  Scroll Indicator */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
         <div className="flex flex-col items-center gap-2 animate-bounce">
           <span className="text-white/70 text-sm">Scroll to explore</span>
@@ -236,7 +233,7 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* 🌊 Bottom Wave */}
+      {/*  Bottom Wave */}
       <div className="absolute bottom-0 left-0 right-0">
         <svg viewBox="0 0 1200 120" fill="none" className="w-full h-auto">
           <path

@@ -5,6 +5,8 @@ import { useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three-stdlib";
 import * as THREE from "three";
 import ModelControls from "@/components/viewer/ModelControls";
+// ✅ IMPORTA IL TUO NoModelPlaceholder (modifica il path secondo la tua struttura)
+import NoModelPlaceholder from "@/components/viewer/NoModelPlaceholder"; // ← Cambia questo path con quello corretto
 
 import { 
   Eye, 
@@ -45,20 +47,8 @@ const CardContent = ({ className, children }) => (
   </div>
 );
 
-// NoModelPlaceholder component
-const NoModelPlaceholder = ({ isModal = false }) => (
-  <div className={`flex items-center justify-center ${isModal ? 'h-64' : 'h-96'} bg-gray-50 dark:bg-gray-800 rounded-xl`}>
-    <div className="text-center">
-      <Box className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-        No 3D Model Loaded
-      </h3>
-      <p className="text-gray-500 dark:text-gray-400">
-        Upload or generate a 3D model to begin viewing
-      </p>
-    </div>
-  </div>
-);
+// ❌ RIMOSSA LA DEFINIZIONE LOCALE DEL NoModelPlaceholder
+// Ora viene importato dal file separato
 
 // Enhanced OBJ Model Component
 const OBJModel = ({ 
@@ -203,10 +193,20 @@ const Loading3D = () => (
 interface Viewer3DProps {
   modelUrl: string | null;
   onModelDelete?: () => void;
-  isModal?: boolean; // ✅ NUOVA PROP
+  isModal?: boolean;
+  // ✅ NUOVE PROPS PER IL LOADING STATE
+  isProcessing?: boolean;
+  processingStatus?: string;
 }
 
-const Viewer3D = ({ modelUrl, onModelDelete, isModal = false }: Viewer3DProps) => {
+const Viewer3D = ({ 
+  modelUrl, 
+  onModelDelete, 
+  isModal = false,
+  // ✅ AGGIUNTE LE NUOVE PROPS
+  isProcessing = false,
+  processingStatus = "Generating 3D Model..."
+}: Viewer3DProps) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
   const [autoRotate, setAutoRotate] = useState(false);
@@ -358,32 +358,32 @@ const Viewer3D = ({ modelUrl, onModelDelete, isModal = false }: Viewer3DProps) =
   }, [modelUrl]);
 
   return (
-    <div className="relative h-full">
+    <div className="relative w-full h-full min-h-0 overflow-hidden">
       
       {/* Background Effects - SOLO SE NON È MODAL */}
       {!isModal && (
         <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 via-blue-50/30 to-indigo-50/50 dark:from-gray-900/50 dark:via-blue-950/20 dark:to-indigo-950/30 rounded-3xl blur-3xl -z-10" />
       )}
       
-      <Card className={`relative h-full ${
+      <Card className={`relative w-full h-full min-h-0 ${
         isModal 
-          ? 'bg-transparent border-none shadow-none' // ✅ Modal: trasparente
+          ? 'bg-transparent border-none shadow-none' 
           : 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 shadow-2xl transition-all duration-500 hover:shadow-3xl'
       }`}>
-        <CardContent className={`h-full ${isModal ? "p-0" : "p-8"}`}> {/* ✅ Modal: no padding */}
+        <CardContent className={`w-full h-full min-h-0 flex flex-col ${isModal ? "p-0" : "p-4 sm:p-6 lg:p-8"}`}>
           
           {/* Header - SOLO SE NON È MODAL */}
           {!isModal && (
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
-                  <Eye className="w-6 h-6 text-white" />
+                <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl sm:rounded-2xl shadow-lg">
+                  <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                     3D Model Viewer
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     Interactive preview and controls
                   </p>
                 </div>
@@ -394,17 +394,17 @@ const Viewer3D = ({ modelUrl, onModelDelete, isModal = false }: Viewer3DProps) =
                 <div className="flex items-center gap-2">
                   <button
                     onClick={resetView}
-                    className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                    className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg sm:rounded-xl transition-colors"
                     title="Reset View"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
                   </button>
                   <button
                     onClick={handleFullScreen}
-                    className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                    className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg sm:rounded-xl transition-colors"
                     title="Fullscreen"
                   >
-                    <Maximize className="w-4 h-4" />
+                    <Maximize className="w-3 h-3 sm:w-4 sm:h-4" />
                   </button>
                 </div>
               )}
@@ -412,23 +412,27 @@ const Viewer3D = ({ modelUrl, onModelDelete, isModal = false }: Viewer3DProps) =
           )}
 
           {!modelUrl ? (
-            <div className="relative">
-              <NoModelPlaceholder isModal={isModal} />
+            <div className="relative flex-1 min-h-0">
+              {/* ✅ USA IL TUO NoModelPlaceholder IMPORTATO CON LE PROPS CORRETTE */}
+              <NoModelPlaceholder 
+                isProcessing={isProcessing}
+                processingStatus={processingStatus}
+              />
             </div>
           ) : (
-            <div className={`h-full ${isModal ? 'space-y-2' : 'space-y-6'} ${
+            <div className={`flex-1 min-h-0 flex flex-col ${isModal ? 'gap-1 sm:gap-2' : 'gap-4 sm:gap-6'} ${
               isModal 
-                ? 'rounded-xl p-2 bg-white/10 backdrop-blur-sm' 
-                : 'border-2 border-gray-800 dark:border-gray-700 rounded-2xl p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800'
+                ? 'rounded-lg sm:rounded-xl p-1 sm:p-2 bg-white/10 backdrop-blur-sm' 
+                : 'border-2 border-gray-800 dark:border-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800'
             }`}>
               
               {/* 3D Viewer Container */}
               <div
                 id="viewer-container"
-                className="relative w-full bg-gradient-to-br from-blue-100 to-slate-300 dark:from-slate-600 dark:to-blue-800 rounded-xl overflow-hidden shadow-inner"
+                className="relative w-full flex-1 min-h-0 bg-gradient-to-br from-blue-100 to-slate-300 dark:from-slate-600 dark:to-blue-800 rounded-lg sm:rounded-xl overflow-hidden shadow-inner"
                 style={{ 
-                  aspectRatio: isModal ? '16/10' : '1 / 1', // ✅ Modal: ratio più largo
-                  height: isModal ? '100%' : 'auto' // ✅ Modal: altezza piena
+                  aspectRatio: isModal ? '16/10' : undefined,
+                  minHeight: isModal ? '200px' : '300px'
                 }}
               >
                 
@@ -568,7 +572,7 @@ const Viewer3D = ({ modelUrl, onModelDelete, isModal = false }: Viewer3DProps) =
 
               {/* Action Buttons - SOLO SE NON È MODAL */}
               {!isModal && !isLoading && !loadError && (
-                <div className="flex justify-center gap-3">
+                <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 mt-auto pt-3 sm:pt-4">
                   
                   {/* Download Button */}
                   <button
@@ -579,19 +583,19 @@ const Viewer3D = ({ modelUrl, onModelDelete, isModal = false }: Viewer3DProps) =
                       link.click();
                       toast.success("Model download started!");
                     }}
-                    className="px-5 py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium rounded-lg border-2 border-blue-200 dark:border-blue-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 flex items-center gap-2 text-sm"
+                    className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-medium rounded-lg border-2 border-blue-200 dark:border-blue-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
                   >
                     <Download className="w-4 h-4" />
-                    Download OBJ
+                    <span className="sm:inline">Download OBJ</span>
                   </button>
 
                   {/* Delete Button */}
                   <button
                     onClick={handleDeleteModel}
-                    className="px-5 py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 font-medium rounded-lg border-2 border-red-200 dark:border-red-700 hover:border-red-300 dark:hover:border-red-600 transition-all duration-200 flex items-center gap-2 text-sm"
+                    className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 font-medium rounded-lg border-2 border-red-200 dark:border-red-700 hover:border-red-300 dark:hover:border-red-600 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Delete Model
+                    <span className="sm:inline">Delete Model</span>
                   </button>
                 </div>
               )}

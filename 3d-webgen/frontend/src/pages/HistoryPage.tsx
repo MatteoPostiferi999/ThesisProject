@@ -42,6 +42,42 @@ const modelOptions = [
   { value: "hunyuan-v2-0", label: "Hunyuan v2.0" },
 ];
 
+// ✅ Funzione per formattare il nome del modello
+const formatModelName = (modelName: string): string => {
+  // Mappa dei nomi modelli per display più chiari
+  const modelDisplayNames: Record<string, string> = {
+    'hunyuan-mini': 'Hunyuan3D Mini',
+    'hunyuan-standard': 'Hunyuan3D Standard', 
+    'hunyuan-pro': 'Hunyuan3D Pro',
+    'hunyuan3d-dit-v2-mini': 'Hunyuan3D DiT v2 Mini',
+    'hunyuan-dit-v2-mini': 'Hunyuan3D DiT v2 Mini',
+    'stable-fast-3d': 'Stable Fast 3D',
+    'zero123plus': 'Zero123Plus',
+    'hunyuan-mini-turbo': 'Hunyuan3D Mini Turbo',
+    'hunyuan-mini-fast': 'Hunyuan3D Mini Fast',
+    'hunyuan-mv': 'Hunyuan3D MV',
+    'hunyuan-mv-turbo': 'Hunyuan3D MV Turbo',
+    'hunyuan-mv-fast': 'Hunyuan3D MV Fast',
+    'hunyuan-v2-0': 'Hunyuan3D v2.0',
+    'hunyuan-v2-0-turbo': 'Hunyuan3D v2.0 Turbo',
+    'hunyuan-v2-0-fast': 'Hunyuan3D v2.0 Fast',
+  };
+
+  // Se c'è una corrispondenza esatta, usala
+  if (modelDisplayNames[modelName]) {
+    return modelDisplayNames[modelName];
+  }
+
+  // Altrimenti, formatta il nome automaticamente
+  return modelName
+    .replace(/^hunyuan3?d?-?/i, 'Hunyuan3D ') // Sostituisce prefisso hunyuan
+    .replace(/-dit-?/i, ' DiT ') // Sostituisce -dit- con DiT
+    .replace(/-v(\d+)/i, ' v$1') // Formatta versioni (v2, v3, etc.)
+    .replace(/-/g, ' ') // Sostituisce trattini con spazi
+    .replace(/\b\w/g, (char) => char.toUpperCase()) // Capitalizza ogni parola
+    .trim();
+};
+
 const HistoryPage = () => {
   const [models, setModels] = useState<GeneratedModel[]>([]);
   const [allModels, setAllModels] = useState<GeneratedModel[]>([]); // ✅ TUTTI i modelli dell'utente
@@ -374,7 +410,7 @@ const HistoryPage = () => {
                     <div className="flex items-center gap-2">
                       <Cpu className="w-4 h-4 text-purple-500" />
                       <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-xs font-medium">
-                        {model.model_name.replace('hunyuan-', '').replace('-', ' ').toUpperCase()}
+                        {formatModelName(model.model_name)}
                       </span>
                     </div>
                   </div>
@@ -430,7 +466,7 @@ const HistoryPage = () => {
           </div>
         )}
 
-        {/* ✅ 3D Viewer Modal - VERSIONE SEMPLIFICATA CON SOLO PULSANTE CHIUDI */}
+        {/* ✅ 3D Viewer Modal */}
         {viewerModel && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="relative w-full max-w-5xl h-[85vh]">
@@ -446,7 +482,7 @@ const HistoryPage = () => {
 
               {/* Container del viewer */}
               <div className="w-full h-full bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 overflow-hidden">
-                {/* ✅ 3D Viewer Content - OCCUPA TUTTO LO SPAZIO */}
+                {/* ✅ 3D Viewer Content O */}
                 <div className="w-full h-full">
                   <Viewer3D 
                     modelUrl={viewerModel}

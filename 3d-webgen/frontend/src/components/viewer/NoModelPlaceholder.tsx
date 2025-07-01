@@ -13,15 +13,15 @@ import { useState, useEffect } from "react";
 interface NoModelPlaceholderProps {
   modelUrl?: string;
   onModelDelete?: () => void;
-  isProcessing?: boolean; // AGGIUNTA PROP PER LOADING
-  processingStatus?: string; // AGGIUNTA PROP PER STATUS
+  isProcessing?: boolean; 
+  processingStatus?: string; 
 }
 
 const NoModelPlaceholder: React.FC<NoModelPlaceholderProps> = ({ 
   modelUrl, 
   onModelDelete,
-  isProcessing = false, // DEFAULT FALSE
-  processingStatus = "Generating 3D Model..." // DEFAULT STATUS
+  isProcessing = false, 
+  processingStatus = "Generating 3D Model..." 
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
 

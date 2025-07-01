@@ -30,6 +30,38 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ✅ FUNZIONI PER FORZARE I MESSAGGI IN INGLESE
+  const handleInvalid = (e: React.InvalidEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const field = e.target.name;
+    
+    if (!e.target.value.trim()) {
+      e.target.setCustomValidity('Please fill out this field');
+      setErrors(prev => ({ 
+        ...prev, 
+        [field]: 'Please fill out this field' 
+      }));
+    } else if (field === 'username' && e.target.value.length < 3) {
+      e.target.setCustomValidity('Username must be at least 3 characters');
+      setErrors(prev => ({ 
+        ...prev, 
+        [field]: 'Username must be at least 3 characters' 
+      }));
+    } else if (field === 'password' && e.target.value.length < 3) {
+      e.target.setCustomValidity('Password must be at least 3 characters');
+      setErrors(prev => ({ 
+        ...prev, 
+        [field]: 'Password must be at least 3 characters' 
+      }));
+    }
+  };
+
+  const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
+    e.currentTarget.setCustomValidity('');
+    // Continua con la logica normale
+    handleChange(e as React.ChangeEvent<HTMLInputElement>);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -45,14 +77,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
     
     // Simple username validation
     if (!formData.username.trim()) {
-      newErrors.username = "Username is required";
+      newErrors.username = "Please fill out this field";
     } else if (formData.username.length < 3) {
       newErrors.username = "Username must be at least 3 characters";
     }
     
     // Simple password validation
     if (!formData.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = "Please fill out this field";
     } else if (formData.password.length < 3) {
       newErrors.password = "Password must be at least 3 characters";
     }
@@ -148,7 +180,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         </div>
 
         {/* 📝 Register Form */}
-        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+        <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off" noValidate>
           
           {/* 👤 Username Field */}
           <div className="space-y-2">
@@ -164,7 +196,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                 name="username"
                 placeholder="Choose a username"
                 value={formData.username}
-                onChange={handleChange}
+                onInput={handleInput}
+                onInvalid={handleInvalid}
                 onFocus={() => setFocusedField('username')}
                 onBlur={() => setFocusedField(null)}
                 autoComplete="off"
@@ -177,6 +210,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                 } focus:outline-none focus:ring-4`}
                 required
                 disabled={loading}
+                minLength={3}
               />
             </div>
             {errors.username && (
@@ -201,7 +235,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                 name="password"
                 placeholder="Create a password"
                 value={formData.password}
-                onChange={handleChange}
+                onInput={handleInput}
+                onInvalid={handleInvalid}
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
                 autoComplete="new-password"
@@ -214,6 +249,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                 } focus:outline-none focus:ring-4`}
                 required
                 disabled={loading}
+                minLength={3}
               />
               <button
                 type="button"
