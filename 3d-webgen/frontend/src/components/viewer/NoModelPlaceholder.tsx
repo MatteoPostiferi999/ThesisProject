@@ -21,7 +21,7 @@ const NoModelPlaceholder: React.FC<NoModelPlaceholderProps> = ({
   modelUrl, 
   onModelDelete,
   isProcessing = false, // DEFAULT FALSE
-  processingStatus = "Processing..." // DEFAULT STATUS
+  processingStatus = "Generating 3D Model..." // DEFAULT STATUS
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -57,76 +57,34 @@ const NoModelPlaceholder: React.FC<NoModelPlaceholderProps> = ({
     }
   }, [isProcessing]);
 
-  // Se sta processando, mostra lo stato di loading
+  // Se sta processando, mostra solo lo spinner pulito
   if (isProcessing) {
     return (
       <div className="relative overflow-hidden">
         
-        {/* Animated Background per Loading */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/30 dark:to-purple-950/30 opacity-70 animate-pulse" />
-        
-        {/* Floating Elements Animati */}
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className={`absolute w-2 h-2 bg-blue-400 rounded-full opacity-30 animate-bounce`}
-              style={{
-                left: `${20 + i * 15}%`,
-                top: `${30 + (i % 3) * 15}%`,
-                animationDelay: `${i * 0.4}s`,
-                animationDuration: '2s',
-              }}
-            />
-          ))}
-        </div>
+        {/* Sfondo minimale per il loading */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20" />
 
-        <div className="relative flex flex-col items-center justify-center h-[350px] border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-3xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm p-8 text-center">
+        <div className="relative flex flex-col items-center justify-center h-[350px] border-2 border-dashed border-blue-300/50 dark:border-blue-600/50 rounded-3xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm p-8 text-center">
           
-          {/* Loading Icon Container */}
-          <div className="relative mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-xl animate-pulse">
-              <Loader2 className="h-10 w-10 text-white animate-spin" />
+          {/* Spinner Container */}
+          <div className="relative mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+              <Loader2 className="h-8 w-8 text-white animate-spin" />
             </div>
             
-            {/* Rotating Ring */}
-            <div className="absolute inset-0 w-20 h-20 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin opacity-30" />
+            {/* Ring esterno rotante */}
+            <div className="absolute inset-0 w-16 h-16 border-2 border-blue-300/30 border-t-blue-500 rounded-full animate-spin" style={{animationDuration: '3s'}} />
           </div>
 
-          {/* Loading Content */}
-          <div className="space-y-3 mb-6">
-            <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-pulse">
+          {/* Testo di caricamento minimo */}
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
               {processingStatus}
             </h3>
-            <p className="text-blue-600 dark:text-blue-400 max-w-sm text-sm animate-pulse">
-              Your 3D model is being generated. This may take a few minutes...
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Please wait...
             </p>
-          </div>
-
-          {/* Processing Steps Indicator */}
-          <div className="flex items-center gap-4 mb-6">
-            {steps.map((step, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-1000 ${
-                  index <= 1 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-gray-800'
-                }`}>
-                  <step.icon className={`h-4 w-4 transition-colors duration-1000 ${
-                    index <= 1 ? 'text-blue-500' : 'text-gray-400'
-                  }`} />
-                </div>
-                
-                {index < steps.length - 1 && (
-                  <ArrowRight className="h-3 w-3 text-blue-300 dark:text-blue-600" />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Progress Hint */}
-          <div className="px-4 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-300 dark:border-blue-600 animate-pulse">
-            <span className="text-sm text-blue-700 dark:text-blue-300">
-              ✨ AI is working its magic...
-            </span>
           </div>
 
         </div>
@@ -224,7 +182,7 @@ const NoModelPlaceholder: React.FC<NoModelPlaceholderProps> = ({
         {/* Action Hint */}
         <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-700">
           <span className="text-sm text-blue-700 dark:text-blue-300">
-            Select a model above and upload your image to begin
+            Select a model and upload your image to begin
           </span>
         </div>
 
