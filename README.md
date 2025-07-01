@@ -1,110 +1,128 @@
 # AI Assisted Design: 2D to 3D Reconstruction for Rapid Prototyping
 
-A web platform that transforms 2D images into 3D models using AI-powered reconstruction techniques. Users upload images and receive high-quality 3D models through an asynchronous processing queue. The system supports multiple AI models and provides real-time generation status updates.
+A web-based platform that transforms 2D images into high-quality 3D models using state-of-the-art AI reconstruction techniques. The system employs asynchronous processing architecture to handle computationally intensive 3D generation tasks while providing real-time status updates to users.
 
-## 🏗️ Architecture Overview
+## 🏗️ System Architecture
 
 ![System Architecture](docs/ComponentDiagram.png)
 
-The system follows a microservices architecture with asynchronous task processing:
-- **Frontend (React)** communicates with **Django API Backend** 
-- **Backend** sends tasks to **Redis Message Broker**
-- **Celery Worker** processes AI tasks in **Docker Container** on **GPU Host**
-- Generated 3D models are stored in **Supabase** for persistence
+The platform implements a distributed microservices architecture with asynchronous task processing:
+- **Frontend Client** (React) interfaces with **Django REST API Backend**
+- **Backend API** queues processing tasks via **Redis Message Broker**
+- **Celery Worker** executes AI inference in **containerized GPU environment**
+- **Persistent Storage** (Supabase) maintains generated models and metadata
 
-## 🌐 Deployment
+## 🌐 Production Deployment
 
-- **Frontend**: [Netlify](https://tesi2025.netlify.app) - React + TypeScript + Three.js
-- **Backend + Redis**: [Railway](https://railway.app) - Django REST API + Redis queue
-- **Celery Worker**: GPU cloud instance (Lambda Labs/AWS/GCP) - Containerized processing
+| Component | Platform | Technology Stack |
+|-----------|----------|------------------|
+| **Frontend** | [Netlify](https://tesi2025.netlify.app) | React, TypeScript, Three.js, Tailwind CSS |
+| **Backend + Redis** | [Railway](https://railway.app) | Django REST API, Redis Queue |
+| **Celery Worker** | GPU Cloud Instance | Docker, PyTorch, Diffusers |
 
-## ⚡ GPU Worker Setup
+## ⚡ GPU Worker Configuration
 
-The Celery worker requires a **GPU instance** for AI model inference due to computational demands. The worker runs in a Docker container to avoid dependency conflicts.
+The Celery worker requires dedicated GPU infrastructure for AI model inference due to computational complexity. The worker operates within a Docker container to ensure dependency isolation and reproducible environments.
 
-### 🚀 Quick Start (Manual GPU Instance)
+### 🚀 Deployment Instructions
 
-1. **SSH into your GPU instance**
-2. **(Optional) Navigate to persistent storage** (e.g., `cd /workspace` on Lambda Labs)
-3. **Copy and paste this bootstrap script**:
+**Prerequisites:**
+- GPU-enabled cloud instance (recommended: [Lambda Labs](https://lambda.ai))
+- CUDA-compatible hardware with 8GB+ VRAM
+- SSH access to target instance
+
+**Setup Process:**
+
+1. **Establish SSH connection to your GPU cloud instance**
+2. **Execute the automated bootstrap script:**
 
 ```bash
 #!/bin/bash
-# Complete ThesisProject setup from scratch
+# Automated ThesisProject deployment script
 log() { echo "[$(date '+%H:%M:%S')] $1"; }
 
-log "🚀 Starting ThesisProject setup..."
-log "📍 Current: $(pwd)"
+log "🚀 Initializing ThesisProject deployment..."
+log "📍 Working directory: $(pwd)"
 
-# Cleanup
-log "🧹 Cleanup..."
+# Environment cleanup
+log "🧹 Cleaning existing environment..."
 rm -rf ThesisProject Hunyuan3D-2GP venv_lambda
 sudo docker stop $(sudo docker ps -aq) 2>/dev/null || true
 sudo docker rm $(sudo docker ps -aq) 2>/dev/null || true
 
-# Clone and setup
-log "📥 Cloning repository..."
+# Repository cloning and setup
+log "📥 Cloning repository and configuring environment..."
 git clone https://github.com/MatteoPostiferi999/ThesisProject.git
 cd ThesisProject/scripts/lambda-ai
 chmod +x setup_celery_worker.sh
 ./setup_celery_worker.sh
 
-# Quick test
-log "🧪 Testing system..."
+# System validation
+log "🧪 Validating system deployment..."
 sleep 5
-sudo docker exec celery-worker python3 -c "import onnxruntime; print('✅ Ready!')" && log "✅ System working!" || log "❌ Test failed"
+sudo docker exec celery-worker python3 -c "import onnxruntime; print('✅ System operational')" && log "✅ Deployment successful" || log "❌ Deployment failed"
 
-log "🎉 Setup complete! Project at: $(pwd | sed 's|/scripts/lambda-ai||')"
-log "📊 Monitor: sudo docker compose -f docker-compose.celery.yml logs -f celery-worker"
-log "🎯 Test at: https://tesi2025.netlify.app"
+log "🎉 Deployment completed successfully"
+log "📍 Project location: $(pwd | sed 's|/scripts/lambda-ai||')"
+log "📊 Monitor logs: sudo docker compose -f docker-compose.celery.yml logs -f celery-worker"
+log "🎯 Platform URL: https://tesi2025.netlify.app"
 
-# Auto-start log monitoring
+# Initialize log monitoring
 sudo docker compose -f docker-compose.celery.yml logs --tail=20 -f celery-worker
 ```
 
-### 🔧 Why This Approach?
+### 🔧 Architecture Design Rationale
 
-**Two-script architecture**:
-- **Bootstrap script**: Lightweight, always copy-pastable, handles environment cleanup
-- **Setup script**: Versioned in Git (`setup_celery_worker.sh`), contains complex Docker + AI model logic
+**Dual-Script Architecture:**
+- **Bootstrap Script**: Lightweight initialization script for rapid deployment and environment preparation
+- **Setup Script**: Version-controlled configuration (`setup_celery_worker.sh`) containing complex Docker orchestration and AI model initialization
 
-This ensures the heavy setup logic is always up-to-date and version-controlled while keeping manual intervention minimal.
+This design ensures that complex deployment logic remains version-controlled while maintaining deployment simplicity through automated bootstrapping.
 
-## 🎯 Usage
+## 🎯 Platform Usage
 
-1. Visit [https://tesi2025.netlify.app](https://tesi2025.netlify.app)
-2. Create account and select AI model
-3. Upload 2D image (PNG/JPG)
-4. Monitor real-time generation progress
-5. View/download 3D model (OBJ format)
+1. Access the platform at [https://tesi2025.netlify.app](https://tesi2025.netlify.app)
+2. Complete user registration and authentication
+3. Select appropriate AI reconstruction model
+4. Upload source image (supported formats: PNG, JPG)
+5. Monitor real-time processing status and queue position
+6. Download generated 3D model (OBJ format)
 
-## 🔍 Monitoring
+## 🛠️ Technology Stack
 
-```bash
-# View worker logs
-sudo docker compose -f docker-compose.celery.yml logs celery-worker -f
+**Frontend Architecture:**
+- React with TypeScript for type-safe development
+- Three.js for interactive 3D model visualization
+- Tailwind CSS for responsive design framework
 
-# Check worker status
-sudo docker ps
+**Backend Infrastructure:**
+- Django REST Framework for API development
+- Celery distributed task queue for asynchronous processing
+- Redis message broker for task coordination
 
-# Restart worker
-sudo docker compose -f docker-compose.celery.yml restart
-```
+**AI/ML Components:**
+- Hunyuan3D DiT v2 reconstruction model
+- PyTorch deep learning framework
+- Diffusers pipeline library for model inference
 
-## 🛠️ Technical Stack
+**Cloud Infrastructure:**
+- Netlify for frontend hosting and CDN
+- Railway for backend API and Redis services
+- GPU cloud providers for intensive compute workloads
 
-- **Frontend**: React, TypeScript, Three.js, Tailwind CSS
-- **Backend**: Django REST Framework, Celery, Redis
-- **AI Models**: Hunyuan3D DiT v2, PyTorch, Diffusers
-- **Infrastructure**: Netlify, Railway, Docker, GPU Cloud
+## 📋 System Requirements
 
-## 📋 Requirements
+**GPU Instance Specifications:**
+- **VRAM**: 8GB minimum (Tesla T4/V100/A10G recommended)
+- **System Memory**: 16GB+ RAM for model loading and processing
+- **Storage**: 20GB+ available space for AI models and dependencies
+- **Network**: Stable high-bandwidth connection to Railway backend
 
-- **GPU Instance**: 8GB+ VRAM (Tesla T4/V100/A10G)
-- **RAM**: 16GB+ system memory
-- **Storage**: 20GB+ for models and dependencies
-- **Network**: Stable connection to Railway backend
+**Supported Platforms:**
+- Linux-based GPU instances (Ubuntu 20.04+ recommended)
+- CUDA 11.8+ compatible hardware
+- Docker Engine 20.10+ for containerization
 
 ---
 
-**Note**: GPU instance must be manually started for cost optimization. The worker setup is automated via the bootstrap script above.
+**Note**: GPU instances are activated on-demand for cost optimization. Complete worker deployment is automated through the provided bootstrap script, requiring minimal manual intervention.
