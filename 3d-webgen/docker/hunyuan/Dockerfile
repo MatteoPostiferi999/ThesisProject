@@ -1,5 +1,5 @@
 # ============================
-# Final image: Complete Celery Worker for Hunyuan3D - FIXED
+# Final image: Complete Celery Worker for Hunyuan3D - CUSTOM USER COMPATIBLE
 # ============================
 
 FROM matteopostiferi/hunyuan-base:latest
@@ -24,18 +24,8 @@ RUN echo "📦 Installing missing onnxruntime..." && \
     pip install --no-cache-dir onnxruntime && \
     echo "✅ onnxruntime installed successfully"
 
-# 🔧 FIX CRITICAL: Fix tasks.py timezone import and invalid fields
-RUN echo "🔧 Fixing tasks.py..." && \
-    cd ThesisProject/3d-webgen/backend/jobs && \
-    sed -i '1i from django.utils import timezone' tasks.py && \
-    sed -i 's/job\.save(update_fields=\["status", "task_id"\])/job.save(update_fields=["status", "updated_at"])/g' tasks.py && \
-    sed -i 's/job\.save(update_fields=\["result_file", "status", "completed_at"\])/job.save(update_fields=["result_file", "status", "updated_at"])/g' tasks.py && \
-    sed -i 's/job\.save(update_fields=\["status", "error_message", "failed_at"\])/job.save(update_fields=["status", "error_message", "updated_at"])/g' tasks.py && \
-    sed -i 's/job\.task_id = task_id/#job.task_id = task_id/g' tasks.py && \
-    sed -i 's/job\.started_at = timezone\.now()/job.updated_at = timezone.now()/g' tasks.py && \
-    sed -i 's/job\.completed_at = timezone\.now()/job.updated_at = timezone.now()/g' tasks.py && \
-    sed -i 's/job\.failed_at = timezone\.now()/job.updated_at = timezone.now()/g' tasks.py && \
-    echo "✅ tasks.py fixed successfully"
+# 🔧 REMOVED: tasks.py automatic fixes (now using updated code from git)
+# The new tasks.py already has all necessary fixes and custom user support
 
 # 📦 Install Hunyuan3D-2GP
 RUN echo "📦 Installing Hunyuan3D-2GP..." && \
@@ -63,7 +53,7 @@ try:
     print('✅ boto3 (Supabase Storage)')
     
     from django.utils import timezone
-    print('✅ Django timezone import (FIXED)')
+    print('✅ Django timezone import')
     
     # Celery stack
     import celery
@@ -74,11 +64,15 @@ try:
     
     # CRITICAL FIX: Test onnxruntime
     import onnxruntime
-    print(f'✅ onnxruntime {onnxruntime.__version__} (FIXED)')
+    print(f'✅ onnxruntime {onnxruntime.__version__}')
     
     # CRITICAL FIX: Test rembg with onnxruntime
     from rembg import remove
-    print('✅ rembg with onnxruntime support (FIXED)')
+    print('✅ rembg with onnxruntime support')
+    
+    # Performance tracking dependencies
+    import psutil
+    print('✅ psutil for performance tracking')
     
     # Hunyuan3D stack
     import hy3dgen
@@ -100,10 +94,11 @@ try:
     
     print()
     print('🎉 ALL DEPENDENCIES VERIFIED!')
-    print('🔧 CRITICAL FIXES APPLIED:')
-    print('   ✅ onnxruntime installed')
-    print('   ✅ timezone import added')
-    print('   ✅ invalid job fields fixed')
+    print('🔧 FEATURES INCLUDED:')
+    print('   ✅ Custom User Model support')
+    print('   ✅ Performance metrics tracking')
+    print('   ✅ onnxruntime support')
+    print('   ✅ Updated tasks.py from git')
     print('🚀 Celery Worker container ready for production!')
     
 except Exception as e:
@@ -137,12 +132,13 @@ RUN chmod +x /usr/local/bin/run-celery-worker /usr/local/bin/run-celery-with-que
 
 # 💡 Usage information
 COPY <<EOF /workspace/README.txt
-🎉 Complete Celery Worker Container Ready! (FIXED VERSION)
+🎉 Complete Celery Worker Container Ready! (CUSTOM USER COMPATIBLE)
 
-🔧 FIXES APPLIED:
-   ✅ onnxruntime installed (for rembg support)
-   ✅ timezone import added to tasks.py
-   ✅ invalid job fields replaced with valid ones
+🔧 FEATURES:
+   ✅ Custom User Model support
+   ✅ Performance metrics tracking (psutil)
+   ✅ onnxruntime support for rembg
+   ✅ Updated code from git repository
 
 🚀 Start options:
    1. Default: celery -A backend worker --loglevel=info --pool=solo
@@ -169,15 +165,15 @@ COPY <<EOF /workspace/README.txt
    ✅ Celery + Redis (Railway)
    ✅ Hunyuan3D + PyTorch + CUDA
    ✅ Computer vision and 3D processing
-   ✅ onnxruntime + rembg (FIXED)
-   ✅ timezone import (FIXED)
-   ✅ valid job fields (FIXED)
+   ✅ onnxruntime + rembg
+   ✅ psutil for performance tracking
+   ✅ Custom User Model compatible
 EOF
 
 # 🏷️ Final metadata
-LABEL hunyuan3d.version="2GP-fixed"
-LABEL thesis.project="3d-webgen-celery-fixed"
-LABEL dependencies="complete-fixed"
+LABEL hunyuan3d.version="2GP-custom-user"
+LABEL thesis.project="3d-webgen-celery-custom-user"
+LABEL dependencies="complete-custom-user"
 
 # 👟 Default command: Start Celery Worker with both queues
 CMD ["celery", "-A", "backend", "worker", "--loglevel=info", "--pool=solo", "-Q", "celery,default"]
