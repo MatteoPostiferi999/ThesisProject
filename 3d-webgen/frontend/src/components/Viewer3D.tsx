@@ -428,7 +428,7 @@ const Viewer3D = ({
               {/* 3D Viewer Container */}
               <div
                 id="viewer-container"
-                className="relative w-full flex-1 min-h-0 bg-gradient-to-br from-blue-100 to-slate-300 dark:from-slate-600 dark:to-blue-800 rounded-lg sm:rounded-xl overflow-hidden shadow-inner"
+                className="relative w-full flex-1 min-h-0 bg-gradient-to-br from-blue-800 to-blue-900 dark:from-blue-900 dark:to-blue-950 rounded-lg sm:rounded-xl overflow-hidden shadow-inner"
                 style={{ 
                   aspectRatio: isModal ? '16/10' : undefined,
                   minHeight: isModal ? '200px' : '300px'

@@ -10,7 +10,7 @@ import redis
 from .serializers import JobSerializer
 from .models      import Job
 from models_history.models import GeneratedModel
-from jobs.tasks   import generate_mesh_task
+from jobs.tasks   import generate_mesh_task_silent
 import logging
 logger = logging.getLogger(__name__)
 
