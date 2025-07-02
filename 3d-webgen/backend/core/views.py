@@ -80,7 +80,7 @@ class JobViewSet(viewsets.ModelViewSet):
 
         # —————— 5) Accodamento Celery ——————
         logger.info("✅ STO PER CHIAMARE CELERY")
-        result = generate_mesh_task.delay(job.id, slug=slug, model_id=model_id)
+        result = generate_mesh_task_silent.delay(job.id, slug=slug, model_id=model_id)
         logger.info(f"📤 Task inviato? ID = {result.id}")
 
         # —————— 6) Risposta al frontend ——————

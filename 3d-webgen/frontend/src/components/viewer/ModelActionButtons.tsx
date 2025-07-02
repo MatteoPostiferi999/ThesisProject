@@ -1,20 +1,19 @@
 import { 
   Download, 
-  Trash2, 
   Share2, 
   Eye, 
   Copy,
   CheckCircle2,
   ExternalLink,
-  FileDown,
-  AlertTriangle
+  FileDown
+  // ✅ RIMOSSO: Trash2, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "@/components/ui/sonner";
 
 interface ModelActionButtonsProps {
-  onModelDelete?: () => void;
+  onModelDelete?: () => void; // ✅ MANTENUTO per retrocompatibilità ma non usato
   modelUrl: string;
   modelName?: string;
 }
@@ -47,13 +46,13 @@ const downloadFileViaBlob = async (url: string, filename: string) => {
 };
 
 const ModelActionButtons = ({ 
-  onModelDelete, 
+  onModelDelete, // ✅ RICEVUTO ma ignorato
   modelUrl, 
   modelName = "generated_model" 
 }: ModelActionButtonsProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // ✅ RIMOSSO: showDeleteConfirm state
 
   const handleDownload = async (format: 'obj' | 'ply' | 'stl' = 'obj') => {
     setIsDownloading(true);
@@ -92,18 +91,7 @@ const ModelActionButtons = ({
     }
   };
 
-  const handleDelete = () => {
-    if (showDeleteConfirm) {
-      onModelDelete?.();
-      setShowDeleteConfirm(false);
-      toast.success("🗑️ Model deleted", {
-        description: "The 3D model has been removed from your history."
-      });
-    } else {
-      setShowDeleteConfirm(true);
-      setTimeout(() => setShowDeleteConfirm(false), 3000);
-    }
-  };
+  // ✅ RIMOSSO: handleDelete function
 
   const openInNewTab = () => {
     window.open(modelUrl, '_blank');
@@ -164,8 +152,8 @@ const ModelActionButtons = ({
         </div>
       </div>
 
-      {/* 🎮 Action Buttons Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 🎮 Action Buttons Grid - SOLO 3 COLONNE SENZA DELETE */}
+      <div className="grid grid-cols-3 gap-3">
         
         {/* 👁️ View Model */}
         <Button
@@ -209,27 +197,7 @@ const ModelActionButtons = ({
           </div>
         </Button>
 
-        {/* 🗑️ Delete */}
-        <Button
-          variant="outline"
-          className={`group px-4 py-3 bg-white dark:bg-gray-800 border-2 transition-all duration-300 ${
-            showDeleteConfirm
-              ? "border-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse"
-              : "border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-400"
-          }`}
-          onClick={handleDelete}
-        >
-          <div className="flex flex-col items-center gap-1">
-            {showDeleteConfirm ? (
-              <AlertTriangle className="h-4 w-4 text-red-500 animate-bounce" />
-            ) : (
-              <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            )}
-            <span className="text-xs font-medium">
-              {showDeleteConfirm ? "Confirm?" : "Delete"}
-            </span>
-          </div>
-        </Button>
+        {/* ✅ DELETE BUTTON COMPLETAMENTE RIMOSSO */}
 
       </div>
 

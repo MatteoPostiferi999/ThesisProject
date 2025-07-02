@@ -588,14 +588,6 @@ const Viewer3D = ({
                     <span className="sm:inline">Download OBJ</span>
                   </button>
 
-                  {/* Delete Button */}
-                  <button
-                    onClick={handleDeleteModel}
-                    className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 font-medium rounded-lg border-2 border-red-200 dark:border-red-700 hover:border-red-300 dark:hover:border-red-600 transition-all duration-200 flex items-center justify-center gap-2 text-sm"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="sm:inline">Delete Model</span>
-                  </button>
                 </div>
               )}
 

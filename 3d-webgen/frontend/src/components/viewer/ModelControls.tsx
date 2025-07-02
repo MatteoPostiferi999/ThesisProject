@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Home,
   Minimize
+  // ✅ RIMOSSA ICONA DELETE
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -26,7 +27,8 @@ interface ModelControlsProps {
   onZoomOut: () => void;
   onFullScreen: () => void;
   onAutoRotateToggle: () => void;
-  onModelDelete?: () => void;
+  onModelDelete?: () => void; // ✅ MANTENUTO per retrocompatibilità ma non usato
+  showDeleteButton?: boolean; // ✅ MANTENUTO ma ignorato
 }
 
 const ModelControls = ({
@@ -39,7 +41,8 @@ const ModelControls = ({
   onZoomOut,
   onFullScreen,
   onAutoRotateToggle,
-  onModelDelete
+  onModelDelete, // ✅ RICEVUTO ma ignorato
+  showDeleteButton = true // ✅ RICEVUTO ma ignorato
 }: ModelControlsProps) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
@@ -108,6 +111,8 @@ const ModelControls = ({
 
           {/* Separatore prima dei controlli sempre visibili */}
           {isFullScreen && <div className="w-px h-6 bg-white/20" />}
+
+          {/* ✅ DELETE BUTTON RIMOSSO COMPLETAMENTE */}
 
           {/* 👁️ Visibility Toggle */}
           <Button 
