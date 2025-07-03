@@ -5,7 +5,7 @@ import { useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three-stdlib";
 import * as THREE from "three";
 import ModelControls from "@/components/viewer/ModelControls";
-import NoModelPlaceholder from "@/components/viewer/NoModelPlaceholder"; // ← Cambia questo path con quello corretto
+import NoModelPlaceholder from "@/components/viewer/NoModelPlaceholder";
 
 import { 
   Eye, 
@@ -46,17 +46,15 @@ const CardContent = ({ className, children }) => (
   </div>
 );
 
-// ❌ RIMOSSA LA DEFINIZIONE LOCALE DEL NoModelPlaceholder
-// Ora viene importato dal file separato
-
-// Enhanced OBJ Model Component
+// Enhanced OBJ Model Component with responsive scaling
 const OBJModel = ({ 
   url, 
   rotation, 
   autoRotate, 
   scale = 1.5,
   onLoad,
-  onError
+  onError,
+  isFullScreen = false
 }) => {
   console.log("🎯 OBJModel attempting to load:", url);
   
@@ -107,7 +105,7 @@ const OBJModel = ({
     return () => clearInterval(interval);
   }, [autoRotate]);
 
-  // Center and normalize the model
+  // ✅ FIXED: Dynamic scaling based on container and fullscreen mode
   useEffect(() => {
     if (obj && ref.current) {
       console.log("🎯 Centering and scaling model...");
@@ -127,15 +125,26 @@ const OBJModel = ({
         z: center.z
       });
       
+      // Center the model
       obj.position.sub(center);
       
+      // ✅ DYNAMIC SCALING: Different scale for fullscreen vs normal vs modal
       const maxDim = Math.max(size.x, size.y, size.z);
-      const normalizedScale = scale / maxDim;
-      ref.current.scale.setScalar(normalizedScale);
+      let targetScale;
       
-      console.log("📏 Applied scale:", normalizedScale);
+      if (isFullScreen) {
+        // In fullscreen, use a more conservative scale
+        targetScale = 2.5 / maxDim;
+      } else {
+        // In normal view or modal, use original scale logic
+        targetScale = scale / maxDim;
+      }
+      
+      ref.current.scale.setScalar(targetScale);
+      
+      console.log("📏 Applied scale:", targetScale, "| Fullscreen:", isFullScreen);
     }
-  }, [obj, scale]);
+  }, [obj, scale, isFullScreen]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -193,7 +202,6 @@ interface Viewer3DProps {
   modelUrl: string | null;
   onModelDelete?: () => void;
   isModal?: boolean;
-  // ✅ NUOVE PROPS PER IL LOADING STATE
   isProcessing?: boolean;
   processingStatus?: string;
 }
@@ -202,7 +210,6 @@ const Viewer3D = ({
   modelUrl, 
   onModelDelete, 
   isModal = false,
-  // ✅ AGGIUNTE LE NUOVE PROPS
   isProcessing = false,
   processingStatus = "Generating 3D Model..."
 }: Viewer3DProps) => {
@@ -215,6 +222,35 @@ const Viewer3D = ({
   
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const controlsRef = useRef<any>(null);
+
+  // ✅ RESPONSIVE: Dynamic camera position based on screen size and viewer mode
+  const getCameraPosition = (): [number, number, number] => {
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    
+    if (isFullScreen) {
+      return [0, 0, 4]; // Closer camera for fullscreen
+    } else if (isModal) {
+      // Modal: closer on mobile for better view
+      return screenWidth < 640 ? [0, 0, 3] : [0, 0, 3.5];
+    }
+    // Normal view: responsive distance
+    return screenWidth < 640 ? [0, 0, 4] : [0, 0, 5];
+  };
+
+  // ✅ RESPONSIVE: Dynamic scale based on screen size and container
+  const getModelScale = () => {
+    // Get screen width for responsive scaling
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    
+    if (isFullScreen) {
+      return 1.2; // Smaller base scale for fullscreen
+    } else if (isModal) {
+      // Modal: scale based on screen size
+      return screenWidth < 640 ? 1.8 : 2.2; // Smaller on mobile, larger on desktop
+    }
+    // Normal view: scale based on screen size
+    return screenWidth < 640 ? 1.5 : 1.8; // Responsive scaling
+  };
 
   // Handle fullscreen
   const handleFullScreen = () => {
@@ -234,6 +270,32 @@ const Viewer3D = ({
     }
   };
 
+  // ✅ FIXED: Reset view and dimensions when switching fullscreen mode
+  useEffect(() => {
+    if (controlsRef.current && controlsRef.current.reset) {
+      // Small delay to ensure the transition is complete
+      setTimeout(() => {
+        controlsRef.current.reset();
+        // ✅ Force reset zoom to default when changing fullscreen mode
+        setZoom(1);
+        console.log("🔄 Camera controls reset for mode:", isFullScreen ? 'fullscreen' : 'normal');
+      }, 100);
+    }
+  }, [isFullScreen]);
+
+  // ✅ RESPONSIVE: Update scale and camera when window resizes
+  useEffect(() => {
+    const handleResize = () => {
+      // Force re-render to update responsive values
+      if (controlsRef.current && controlsRef.current.update) {
+        controlsRef.current.update();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Gestione del tasto ESC e dell'evento fullscreenchange
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -243,7 +305,6 @@ const Viewer3D = ({
     };
 
     const handleFullscreenChange = () => {
-      // Controlla se siamo ancora in fullscreen usando type casting per vendor-specific properties
       const doc = document as any;
       const isCurrentlyFullscreen = !!(
         document.fullscreenElement ||
@@ -255,14 +316,12 @@ const Viewer3D = ({
       setIsFullScreen(isCurrentlyFullscreen);
     };
 
-    // Aggiungi i listener
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
-    // Cleanup
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -412,32 +471,46 @@ const Viewer3D = ({
 
           {!modelUrl ? (
             <div className="relative flex-1 min-h-0">
-              {/* ✅ USA IL TUO NoModelPlaceholder IMPORTATO CON LE PROPS CORRETTE */}
               <NoModelPlaceholder 
                 isProcessing={isProcessing}
                 processingStatus={processingStatus}
               />
             </div>
           ) : (
-            <div className={`flex-1 min-h-0 flex flex-col ${isModal ? 'gap-1 sm:gap-2' : 'gap-4 sm:gap-6'} ${
+            /* ✅ FIXED: Remove flex-1 to prevent stretching and set fixed dimensions */
+            <div className={`flex flex-col ${isModal ? 'gap-1 sm:gap-2' : 'gap-4 sm:gap-6'} ${
               isModal 
                 ? 'rounded-lg sm:rounded-xl p-1 sm:p-2 bg-white/10 backdrop-blur-sm' 
                 : 'border-2 border-gray-800 dark:border-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800'
             }`}>
               
-              {/* 3D Viewer Container */}
+              {/* ✅ RESPONSIVE: 3D Viewer Container that adapts to all screen sizes */}
               <div
                 id="viewer-container"
-                className="relative w-full flex-1 min-h-0 bg-gradient-to-br from-blue-800 to-blue-900 dark:from-blue-900 dark:to-blue-950 rounded-lg sm:rounded-xl overflow-hidden shadow-inner"
+                className="relative w-full bg-gradient-to-br from-blue-800 to-blue-900 dark:from-blue-900 dark:to-blue-950 rounded-lg sm:rounded-xl overflow-hidden shadow-inner"
                 style={{ 
-                  aspectRatio: isModal ? '16/10' : undefined,
-                  minHeight: isModal ? '200px' : '300px'
+                  // ✅ RESPONSIVE: Adaptive sizing for all devices
+                  ...(isModal ? {
+                    // Modal mode: Fill the container completely
+                    height: '100%',
+                    minHeight: 'min(400px, 70vh)', // Responsive minimum
+                    aspectRatio: '1/1' // Square for modal
+                  } : {
+                    // Normal mode: Responsive dimensions
+                    aspectRatio: '4/3',
+                    height: 'clamp(250px, 50vh, 500px)', // Responsive height
+                    minHeight: '250px', // Mobile minimum
+                    maxHeight: '500px'  // Desktop maximum
+                  })
                 }}
               >
                 
-                {/* 3D Canvas */}
+                {/* ✅ FIXED: Dynamic Canvas with responsive camera */}
                 <Canvas
-                  camera={{ position: [0, 0, 5], fov: 50 }}
+                  camera={{ 
+                    position: getCameraPosition(), 
+                    fov: isFullScreen ? 60 : 50 // Wider FOV for fullscreen
+                  }}
                   gl={{ 
                     antialias: true, 
                     alpha: true,
@@ -472,13 +545,14 @@ const Viewer3D = ({
                   {/* Camera */}
                   <PerspectiveCamera ref={cameraRef} makeDefault />
                   
-                  {/* 3D Model */}
+                  {/* ✅ FIXED: 3D Model with responsive scaling */}
                   <Suspense fallback={null}>
                     <OBJModel 
                       url={modelUrl} 
                       rotation={rotation} 
                       autoRotate={autoRotate}
-                      scale={1.8}
+                      scale={getModelScale()} // ✅ Dynamic scale
+                      isFullScreen={isFullScreen} // ✅ Pass fullscreen state
                       onLoad={() => {
                         console.log("🎉 Model loaded - hiding loading screen");
                         setIsLoading(false);
@@ -492,15 +566,15 @@ const Viewer3D = ({
                     />
                   </Suspense>
                   
-                  {/* Controls */}
+                  {/* ✅ FIXED: Controls with adjusted distances for each mode */}
                   <OrbitControls 
                     ref={controlsRef}
                     enableDamping
                     dampingFactor={0.05}
                     enableZoom
                     enablePan
-                    maxDistance={10}
-                    minDistance={2}
+                    maxDistance={isFullScreen ? 8 : 10} // ✅ Different max distances
+                    minDistance={isFullScreen ? 1.5 : 2} // ✅ Different min distances
                     autoRotate={autoRotate}
                     autoRotateSpeed={2}
                     onStart={() => setAutoRotate(false)}
