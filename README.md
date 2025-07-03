@@ -8,7 +8,6 @@ https://github.com/user-attachments/assets/abdfa13a-9107-42b3-bb2d-cf56443c4948
 
 *Complete end-to-end demonstration of the 2D to 3D reconstruction workflow*
 
-**[📺Full Demo Video](docs/videoDemostration.mp4)**
 ![System Architecture](docs/ComponentDiagram.png)
 
 The platform implements a distributed microservices architecture with asynchronous task processing:
