@@ -4,8 +4,7 @@ A web-based platform that transforms 2D images into high-quality 3D models using
 
 ## 🎬 Platform Demonstration
 
-https://github.com/user-attachments/assets/4d7767f6-39b4-43e8-b4f3-b4541ed464c9
-
+https://github.com/user-attachments/assets/abdfa13a-9107-42b3-bb2d-cf56443c4948
 
 *Complete end-to-end demonstration of the 2D to 3D reconstruction workflow*
 
