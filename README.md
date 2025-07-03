@@ -2,8 +2,12 @@
 
 A web-based platform that transforms 2D images into high-quality 3D models using state-of-the-art AI reconstruction techniques. The system employs asynchronous processing architecture to handle computationally intensive 3D generation tasks while providing real-time status updates to users.
 
-## 🏗️ System Architecture
+## 🎬 Platform Demonstration
 
+
+*Complete end-to-end demonstration of the 2D to 3D reconstruction workflow*
+
+**[📺Full Demo Video](docs/videoDemostration.mp4)**
 ![System Architecture](docs/ComponentDiagram.png)
 
 The platform implements a distributed microservices architecture with asynchronous task processing:
